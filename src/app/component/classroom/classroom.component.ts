@@ -43,8 +43,8 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
         this.initialized = true;
 
         this.zoomApiServiceService.join()
-          .then((): void => { /*@TODO*/ })
-          .catch((): void => { /*@TODO*/ });
+          .then((): void => { console.log("connected"); })
+          .catch((cause): void => { console.error(cause) });
       })
       .catch((): void => { /*@TODO*/ });
   }

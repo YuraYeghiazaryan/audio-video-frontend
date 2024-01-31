@@ -5,6 +5,8 @@ import {UserService} from "./user.service";
 import {ClassroomService} from "./classroom.service";
 import {Classroom} from "../model/classroom";
 import {LocalUser} from "../model/local-user";
+import {HttpClient, HttpErrorResponse} from "@angular/common/http";
+import {catchError, ObservableInput, throwError} from "rxjs";
 
 @Injectable({
   providedIn: 'root'
@@ -21,7 +23,8 @@ export class ZoomApiServiceService {
 
   public constructor(
     private userService: UserService,
-    private classroomService: ClassroomService
+    private classroomService: ClassroomService,
+    private httpClient: HttpClient
   ) {}
 
   public init(localUserVideoElement: HTMLVideoElement, remoteUsersVideoContainer: HTMLDivElement): Promise<void> {
@@ -76,13 +79,25 @@ export class ZoomApiServiceService {
       return Promise.reject('User is not logged in');
     }
 
-    /* get possible connection options from backend */
-    return Promise.resolve({
-      videoSDKJWT: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJwXzlpblZhRFNkeUFKeVNrMDgyTzRnIiwiZXhwIjoxNzA2MDA2OTYxLCJpYXQiOjE3MDU5MjA1NjEsInRwYyI6InJvb20iLCJhcHBfa2V5IjoiUWRMZGttQkFUdi04bHQtMGI3Z21uUSIsInJvbGVfdHlwZSI6MX0.rUFVL8_EnUAKX0QvcjJJcL-o0750r8Xlui6Haw8K05Y',
-      username: localUser.username,
-      sessionName: classroom.roomNumber + '',
-      sessionPasscode: 'STRONG-PASSWORD'
+    return new Promise<ConnectionOptions>((resolve, reject): void => {
+      this.httpClient.get<ConnectionOptions>(
+        'http://localhost:8090/zoom/connection-options',
+        {
+          params: {
+            sessionName: classroom.roomNumber,
+            username: localUser.username
+          }
+        }
+      )
+      .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
+        reject(error);
+        return throwError(() => new Error('Something bad happened; please try again later.'));
+      }))
+      .subscribe((connectionOptions: ConnectionOptions): void => {
+        resolve(connectionOptions);
+      });
     });
+
   }
 
   private registerEventListeners(): void  {

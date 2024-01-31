@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import {ClassroomService} from "./service/classroom.service";
 import {Classroom} from "./model/classroom";
+import {provideHttpClient} from "@angular/common/http";
 
 export function initializeApp(classroomService: ClassroomService): () => Promise<Classroom> {
   return (): Promise<Classroom> => {
@@ -20,5 +21,6 @@ export const appConfig: ApplicationConfig = {
       multi: true,
       deps: [ClassroomService],
     },
+    provideHttpClient()
   ]
 };
