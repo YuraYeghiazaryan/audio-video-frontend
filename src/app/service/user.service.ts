@@ -17,13 +17,20 @@ export class UserService {
     /* possible return from backend */
     this._localUser = {
       id: this.nextId++,
-      username
+      username,
+      zoomState: {
+        isVideoOn: false
+      }
     };
     return Promise.resolve(this._localUser);
   }
 
-  public get localUser(): LocalUser | null {
-    return this._localUser;
+  public get localUser(): LocalUser {
+    if (this._localUser) {
+      return this._localUser;
+    }
+
+    throw Error();
   }
 
   public isLoggedIn(): boolean {

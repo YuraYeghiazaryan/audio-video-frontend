@@ -15,8 +15,12 @@ export class ClassroomService {
     return this._classroom;
   }
 
-  public get classroom(): Classroom | null {
-    return this._classroom;
+  public get classroom(): Classroom {
+    if (this._classroom) {
+      return this._classroom;
+    }
+
+    throw Error();
   }
 
   private getRoomNumber(): Promise<number> {

@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, OnInit, signal} from '@angular/core';
 import {ZoomApiServiceService} from "../../service/zoom-api-service.service";
 import {UserService} from "../../service/user.service";
 import {Router} from "@angular/router";
@@ -15,14 +15,18 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   protected initialized: boolean = false;
 
   constructor(
+    protected userService: UserService,
     private zoomApiServiceService: ZoomApiServiceService,
-    private userService: UserService,
     private router: Router,
     private classroomService: ClassroomService
   ) {}
 
   public ngOnInit(): void {
-    const classroomNumber: number | undefined = this.classroomService.classroom?.roomNumber;
+    let classroomNumber: number | undefined = undefined;
+    try {
+      classroomNumber = this.classroomService.classroom.roomNumber;
+    } catch (error) {}
+
     const userLoggedIn: boolean = this.userService.isLoggedIn();
 
     if (!classroomNumber || !userLoggedIn) {
@@ -52,4 +56,12 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   public ngOnDestroy(): void {
     this.zoomApiServiceService.leave();
   }
+
+  public toggleVideo(): void {
+    if (this.userService.localUser.zoomState.isVideoOn) {
+      this.zoomApiServiceService.stopLocalVideo().then()
+    } else {
+      this.zoomApiServiceService.startLocalVideo().then()
+    }
+  };
 }

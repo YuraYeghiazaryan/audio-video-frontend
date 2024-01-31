@@ -107,12 +107,12 @@ export class ZoomApiServiceService {
 
     this.client.on('user-added', (participantProperties: any): void => {
       if (participantProperties[0]?.userId) {
-        this.onUserAdded(participantProperties[0].userId);
+        this.onParticipantAdded(participantProperties[0].userId);
       }
     })
     this.client.on('user-removed', (participantProperties: any): void => {
       if (participantProperties[0]?.userId) {
-        this.onUserRemoved(participantProperties[0].userId);
+        this.onParticipantRemoved(participantProperties[0].userId);
       }
     })
 
@@ -120,25 +120,25 @@ export class ZoomApiServiceService {
       if (payload.action === 'Start') {
         this.startParticipantVideo(payload.userId);
       } else if (payload.action === 'Stop') {
-        this.stopUserVideo(payload.userId);
+        this.stopParticipantVideo(payload.userId);
       }
     })
   }
 
-  private onUserAdded(userId: number): void {
+  private onParticipantAdded(participantId: number): void {
     if (!this.remoteUsersVideoContainer) {
       throw Error();
     }
 
     const remoteUserVideoElement: HTMLCanvasElement = document.createElement('canvas');
-    remoteUserVideoElement.id = 'u_' + userId;
+    remoteUserVideoElement.id = 'u_' + participantId;
     remoteUserVideoElement.width = 200;
     remoteUserVideoElement.height = 112;
 
     this.remoteUsersVideoContainer.appendChild(remoteUserVideoElement);
   }
-  private onUserRemoved(userId: number): void {
-    const remoteUserVideoElement: HTMLCanvasElement | null = document.querySelector('#u_' + userId);
+  private onParticipantRemoved(participantId: number): void {
+    const remoteUserVideoElement: HTMLCanvasElement | null = document.querySelector('#u_' + participantId);
     if (!remoteUserVideoElement) {
       return;
     }
@@ -150,22 +150,32 @@ export class ZoomApiServiceService {
     this.remoteUsersVideoContainer.removeChild(remoteUserVideoElement);
   }
 
-  private startLocalVideo(): Promise<void> {
+  public async startLocalVideo(): Promise<void> {
     if (!this.localUserVideoElement || !this.stream) {
-      throw Error();
+      return Promise.reject();
     }
 
     if (this.stream.isRenderSelfViewWithVideoElement()) {
-      return this.stream.startVideo({videoElement: this.localUserVideoElement});
+      await this.stream.startVideo({videoElement: this.localUserVideoElement});
+
+      if (this.userService.localUser) {
+        this.userService.localUser.zoomState.isVideoOn = true;
+      }
     } else {
       return Promise.reject();
     }
   }
-  private stopLocalVideo(): void {
+
+  public async stopLocalVideo(): Promise<void> {
     if (!this.stream) {
       throw Error();
     }
-    this.stream.stopVideo();
+
+    await this.stream.stopVideo();
+
+    if (this.userService.localUser) {
+      this.userService.localUser.zoomState.isVideoOn = false;
+    }
   }
 
   private startParticipantVideo(userId: number): void {
@@ -180,7 +190,7 @@ export class ZoomApiServiceService {
 
     this.stream.renderVideo(remoteUserVideo, userId, 200, 112, 0, 0, 3)
   }
-  private stopUserVideo(userId: number): void {
+  private stopParticipantVideo(userId: number): void {
     if (!this.stream) {
       throw Error();
     }
@@ -200,13 +210,7 @@ export class ZoomApiServiceService {
 
     this.stream = this.client.getMediaStream();
     this.registerEventListeners();
-    this.startLocalVideo().then(this.onLocalVideoStarted.bind(this));
-  }
 
-  private onLocalVideoStarted(): void {
-    if (!this.client) {
-      throw Error();
-    }
     /* video rendered */
     const participants: Participant[] = this.client.getAllUser();
 
@@ -215,7 +219,7 @@ export class ZoomApiServiceService {
         return;
       }
 
-      this.onUserAdded(participant.userId);
+      this.onParticipantAdded(participant.userId);
       if (participant.bVideoOn) {
         this.startParticipantVideo(participant.userId);
       }
