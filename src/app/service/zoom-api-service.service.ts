@@ -152,15 +152,13 @@ export class ZoomApiServiceService {
 
   public async startLocalVideo(): Promise<void> {
     if (!this.localUserVideoElement || !this.stream) {
-      return Promise.reject();
+      return Promise.reject(`Trying to turn on local Participant video:Stream is not found`);
     }
 
     if (this.stream.isRenderSelfViewWithVideoElement()) {
       await this.stream.startVideo({videoElement: this.localUserVideoElement});
 
-      if (this.userService.localUser) {
-        this.userService.localUser.zoomState.isVideoOn = true;
-      }
+      this.userService.localUser.zoomState.isVideoOn = true;
     } else {
       return Promise.reject();
     }
@@ -168,19 +166,17 @@ export class ZoomApiServiceService {
 
   public async stopLocalVideo(): Promise<void> {
     if (!this.stream) {
-      throw Error();
+      return Promise.reject(`Trying to turn off local Participant video:Stream is not found`);
     }
 
     await this.stream.stopVideo();
 
-    if (this.userService.localUser) {
-      this.userService.localUser.zoomState.isVideoOn = false;
-    }
+    this.userService.localUser.zoomState.isVideoOn = false;
   }
 
   private startParticipantVideo(userId: number): void {
     if (!this.stream) {
-      throw Error();
+      throw Error(`Trying to turn on ${userId} Participant video:Stream is not found`);
     }
 
     const remoteUserVideo: HTMLCanvasElement | null = document.querySelector(`#u_${userId}`);
@@ -192,7 +188,7 @@ export class ZoomApiServiceService {
   }
   private stopParticipantVideo(userId: number): void {
     if (!this.stream) {
-      throw Error();
+      throw Error(`Trying to turn off ${userId} Participant video:Stream is not found`);
     }
 
     const remoteUserVideo: HTMLCanvasElement | null = document.querySelector(`#u_${userId}`);
@@ -205,7 +201,7 @@ export class ZoomApiServiceService {
 
   private onJoin(): void {
     if (!this.client) {
-      throw Error();
+      throw Error('Client is not found after joining');
     }
 
     this.stream = this.client.getMediaStream();

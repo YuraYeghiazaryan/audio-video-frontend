@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import {LocalUser} from "../model/local-user";
+import {Participant} from "@zoom/videosdk";
 
 @Injectable({
   providedIn: 'root'
@@ -30,7 +31,7 @@ export class UserService {
       return this._localUser;
     }
 
-    throw Error();
+    throw Error('User is not logged in');
   }
 
   public isLoggedIn(): boolean {

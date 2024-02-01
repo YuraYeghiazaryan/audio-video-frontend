@@ -12,13 +12,13 @@ import {ClassroomService} from "../../service/classroom.service";
   styleUrl: './classroom.component.css'
 })
 export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
-  protected initialized: boolean = false;
+  protected joined: boolean = false;
 
   constructor(
     protected userService: UserService,
     private zoomApiServiceService: ZoomApiServiceService,
-    private router: Router,
-    private classroomService: ClassroomService
+    private classroomService: ClassroomService,
+    private router: Router
   ) {}
 
   public ngOnInit(): void {
@@ -44,10 +44,10 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.zoomApiServiceService.init(localUserVideoElement, remoteUsersVideoContainer)
       .then((): void => {
-        this.initialized = true;
-
         this.zoomApiServiceService.join()
-          .then((): void => { console.log("connected"); })
+          .then((): void => {
+            this.joined = true;
+          })
           .catch((cause): void => { console.error(cause) });
       })
       .catch((): void => { /*@TODO*/ });

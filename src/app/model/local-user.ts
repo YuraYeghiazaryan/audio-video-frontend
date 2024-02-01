@@ -1,9 +1,9 @@
 export interface LocalUser {
   id: number;
   username: string;
-  zoomState: ZoomState
+  zoomState: ZoomState;
 }
 
 export interface ZoomState {
-  isVideoOn: boolean
+  isVideoOn: boolean;
 }
