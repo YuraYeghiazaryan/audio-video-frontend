@@ -20,7 +20,8 @@ export class UserService {
       id: this.nextId++,
       username,
       zoomState: {
-        isVideoOn: false
+        isVideoOn: false,
+        isAudioOn: false
       }
     };
     return Promise.resolve(this._localUser);

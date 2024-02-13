@@ -6,4 +6,5 @@ export interface LocalUser {
 
 export interface ZoomState {
   isVideoOn: boolean;
+  isAudioOn: boolean;
 }

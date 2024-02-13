@@ -136,6 +136,7 @@ export class ZoomApiServiceService {
     remoteUserVideoElement.height = 112;
 
     this.remoteUsersVideoContainer.appendChild(remoteUserVideoElement);
+    const remoteUserName: HTMLElement = document.createElement('name');
   }
   private onParticipantRemoved(participantId: number): void {
     const remoteUserVideoElement: HTMLCanvasElement | null = document.querySelector('#u_' + participantId);
@@ -172,6 +173,30 @@ export class ZoomApiServiceService {
     await this.stream.stopVideo();
 
     this.userService.localUser.zoomState.isVideoOn = false;
+  }
+
+  public async onLocalAudio(): Promise<void> {
+    if (!this.stream) {
+      return Promise.reject(`Trying to turn on local Participant audio:Stream is not found`);
+    }
+
+    if (this.stream.isRenderSelfViewWithVideoElement()) {
+      await this.stream.startAudio();
+
+      this.userService.localUser.zoomState.isAudioOn = true;
+    } else {
+      return Promise.reject();
+    }
+  }
+
+  public async offLocalAudio(): Promise<void> {
+    if (!this.stream) {
+      return Promise.reject(`Trying to turn off local Participant viaudiodeo:Stream is not found`);
+    }
+
+    await this.stream.stopAudio();
+
+    this.userService.localUser.zoomState.isAudioOn = false;
   }
 
   private startParticipantVideo(userId: number): void {

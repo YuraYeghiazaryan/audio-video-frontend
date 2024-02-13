@@ -64,4 +64,12 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
       this.zoomApiServiceService.startLocalVideo().then()
     }
   };
+
+  public toggleAudio(): void {
+    if (this.userService.localUser.zoomState.isAudioOn) {
+      this.zoomApiServiceService.offLocalAudio().then()
+    } else {
+      this.zoomApiServiceService.onLocalAudio().then()
+    }
+  };
 }
