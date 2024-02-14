@@ -156,11 +156,11 @@ export class ZoomApiServiceService {
     }
 
     if (this.stream.isRenderSelfViewWithVideoElement()) {
-      await this.stream.startVideo({videoElement: this.localUserVideoElement});
+      await this.stream.startVideo({ videoElement: this.localUserVideoElement });
 
       this.userService.localUser.zoomState.isVideoOn = true;
     } else {
-      return Promise.reject();
+      return Promise.reject('Self video rendering on video element is not supported');
     }
   }
 
@@ -179,13 +179,9 @@ export class ZoomApiServiceService {
       return Promise.reject(`Trying to turn on local Participant audio:Stream is not found`);
     }
 
-    if (this.stream.isRenderSelfViewWithVideoElement()) {
-      await this.stream.unmuteAudio();
+    await this.stream.unmuteAudio();
 
-      this.userService.localUser.zoomState.isAudioOn = true;
-    } else {
-      return Promise.reject();
-    }
+    this.userService.localUser.zoomState.isAudioOn = true;
   }
 
   public async muteLocalAudio(): Promise<void> {
@@ -223,13 +219,14 @@ export class ZoomApiServiceService {
     this.stream.stopRenderVideo(remoteUserVideo, userId);
   }
 
-  private onJoin(): void {
+  private async onJoin(): Promise<void> {
     if (!this.client) {
       throw Error('Client is not found after joining');
     }
 
     this.stream = this.client.getMediaStream();
-    this.stream.startAudio({mute: true});
+    await this.stream.startAudio({mute: true, backgroundNoiseSuppression: true});
+
     this.registerEventListeners();
 
     /* video rendered */
