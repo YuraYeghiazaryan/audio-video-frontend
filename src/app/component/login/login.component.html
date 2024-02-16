@@ -1,3 +1,13 @@
+<div>
+  <input type="radio" id="student-radio" name="drone" [value]="Role.STUDENT"  [(ngModel)]="role"/>
+  <label for="student-radio">Student</label>
+</div>
+
+<div>
+  <input type="radio" id="teacher-radio" name="drone" [value]="Role.TEACHER"  [(ngModel)]="role"/>
+  <label for="teacher-radio">Teacher</label>
+</div>
+
 <label for="username">Username:</label>
 <br/>
 <input type="text" id="username" [(ngModel)]="username">

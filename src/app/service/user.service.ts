@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {LocalUser} from "../model/local-user";
+import {LocalUser, Role} from "../model/local-user";
 import {Participant} from "@zoom/videosdk";
 
 @Injectable({
@@ -12,13 +12,14 @@ export class UserService {
 
   public constructor() { }
 
-  public login(username: string): Promise<LocalUser> {
+  public login(username: string, role: Role): Promise<LocalUser> {
     /* @TODO send request to backend to authenticate */
 
     /* possible return from backend */
     this._localUser = {
       id: this.nextId++,
       username,
+      role,
       zoomState: {
         isVideoOn: false,
         isAudioOn: false
