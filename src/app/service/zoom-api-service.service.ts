@@ -13,7 +13,7 @@ import {catchError, ObservableInput, throwError} from "rxjs";
 })
 export class ZoomApiServiceService {
 
-  private localUserVideoElement: HTMLVideoElement | null = null;
+  private localUserVideoContainer: HTMLDivElement | null = null;
   private remoteUsersVideoContainer: HTMLDivElement | null = null;
   private initialized: boolean = false;
   private connectionOptions: ConnectionOptions | null = null;
@@ -27,12 +27,12 @@ export class ZoomApiServiceService {
     private httpClient: HttpClient
   ) {}
 
-  public init(localUserVideoElement: HTMLVideoElement, remoteUsersVideoContainer: HTMLDivElement): Promise<void> {
-    if (!localUserVideoElement || !remoteUsersVideoContainer) {
+  public init(localUserVideoContainer: HTMLDivElement, remoteUsersVideoContainer: HTMLDivElement): Promise<void> {
+    if (!localUserVideoContainer || !remoteUsersVideoContainer) {
       return Promise.reject();
     }
 
-    this.localUserVideoElement = localUserVideoElement;
+    this.localUserVideoContainer = localUserVideoContainer;
     this.remoteUsersVideoContainer = remoteUsersVideoContainer;
     this.client = ZoomVideo.createClient();
 
@@ -150,18 +150,50 @@ export class ZoomApiServiceService {
     this.remoteUsersVideoContainer.removeChild(remoteUserVideoElement);
   }
 
+  private createLocalUserVideoElement(): void {
+    if (!this.localUserVideoContainer) {
+      throw Error();
+    }
+
+    let localUserVideoElement: HTMLVideoElement | HTMLCanvasElement;
+
+    if (this.stream.isRenderSelfViewWithVideoElement()) {
+     localUserVideoElement = document.createElement('video');
+    } else {
+      localUserVideoElement = document.createElement('canvas');
+    }
+
+    localUserVideoElement.id = 'u_' + this.userService.localUser.id;
+    localUserVideoElement.width = 200;
+    localUserVideoElement.height = 112;
+
+    this.localUserVideoContainer.appendChild(localUserVideoElement);
+  }
+
   public async startLocalVideo(): Promise<void> {
-    if (!this.localUserVideoElement || !this.stream) {
+    if (!this.localUserVideoContainer || !this.stream) {
       return Promise.reject(`Trying to turn on local Participant video:Stream is not found`);
     }
 
-    if (this.stream.isRenderSelfViewWithVideoElement()) {
-      await this.stream.startVideo({ videoElement: this.localUserVideoElement });
+    const localUserVideoElement: HTMLElement | null = document.querySelector(`#u_${this.userService.localUser.id}`)
 
-      this.userService.localUser.zoomState.isVideoOn = true;
-    } else {
-      return Promise.reject('Self video rendering on video element is not supported');
+    if (!localUserVideoElement) {
+      return Promise.reject("Local User video element does not exist");
     }
+
+    if (localUserVideoElement instanceof HTMLVideoElement) {
+      await this.stream.startVideo({ videoElement: localUserVideoElement });
+    } else if (localUserVideoElement instanceof HTMLCanvasElement) {
+      const localUserZoomId: number = this.client.getCurrentUserInfo().userId;
+      await this.stream.startVideo()
+        .then((): void => {
+          this.stream.renderVideo(localUserVideoElement, localUserZoomId, 200, 112, 0, 0, 3);
+        });
+    } else {
+      return Promise.reject("Local User video element is not either HTMLVideoElement nor HTMLCanvasElement");
+    }
+
+    this.userService.localUser.zoomState.isVideoOn = true;
   }
 
   public async stopLocalVideo(): Promise<void> {
@@ -226,6 +258,7 @@ export class ZoomApiServiceService {
 
     this.stream = this.client.getMediaStream();
     await this.stream.startAudio({mute: true, backgroundNoiseSuppression: true});
+    this.createLocalUserVideoElement();
 
     this.registerEventListeners();
 

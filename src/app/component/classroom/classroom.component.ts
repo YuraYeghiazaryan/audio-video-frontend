@@ -35,14 +35,14 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public ngAfterViewInit(): void {
-    const localUserVideoElement: HTMLVideoElement | null = document.querySelector('#my-self-view-video');
+    const localUserVideoContainer: HTMLDivElement | null = document.querySelector('#my-self-view-video');
     const remoteUsersVideoContainer: HTMLDivElement | null = document.querySelector('#remote-users');
 
-    if (!localUserVideoElement || !remoteUsersVideoContainer) {
+    if (!localUserVideoContainer || !remoteUsersVideoContainer) {
       throw Error();
     }
 
-    this.zoomApiServiceService.init(localUserVideoElement, remoteUsersVideoContainer)
+    this.zoomApiServiceService.init(localUserVideoContainer, remoteUsersVideoContainer)
       .then((): void => {
         this.zoomApiServiceService.join()
           .then((): void => {
