@@ -1,5 +1,6 @@
-export interface LocalUser {
-  id: number;
+import {User} from "./user";
+
+export interface LocalUser extends User {
   username: string;
   role: Role;
   zoomState: ZoomState;
