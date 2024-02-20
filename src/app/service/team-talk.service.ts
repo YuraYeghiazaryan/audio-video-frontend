@@ -1,21 +1,18 @@
 import {Injectable} from "@angular/core";
 import {GroupingService} from "./grouping.service";
-import {Group} from "../model/group";
 import {User} from "../model/user";
 import {GroupId, TeamId, UserId} from "../model/types";
-
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class TeamTalkService {
-  private groupingService: GroupingService;
   private teams: {[key: TeamId]: GroupId} = {};
 
-  constructor(groupingService: GroupingService) {
-    this.groupingService = groupingService;
-  }
+  constructor(
+    private groupingService: GroupingService
+  ) {}
 
   public createTeam(users: User[]): void {}
 

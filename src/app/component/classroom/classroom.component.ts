@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnDestroy, OnInit, signal} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
 import {ZoomApiServiceService} from "../../service/zoom-api-service.service";
 import {UserService} from "../../service/user.service";
 import {Router} from "@angular/router";
@@ -58,7 +58,7 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public toggleVideo(): void {
-    if (this.userService.localUser.zoomState.isVideoOn) {
+    if (this.userService.localUser.zoomUser.isVideoOn) {
       this.zoomApiServiceService.stopLocalVideo().then()
     } else {
       this.zoomApiServiceService.startLocalVideo().then()
@@ -66,7 +66,7 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   public toggleAudio(): void {
-    if (this.userService.localUser.zoomState.isAudioOn) {
+    if (this.userService.localUser.zoomUser.isAudioOn) {
       this.zoomApiServiceService.muteLocalAudio().then()
     } else {
       this.zoomApiServiceService.unmuteLocalAudio().then()

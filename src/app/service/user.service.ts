@@ -1,6 +1,8 @@
-import { Injectable } from '@angular/core';
-import {LocalUser, Role} from "../model/local-user";
-import {Participant} from "@zoom/videosdk";
+import {Injectable} from '@angular/core';
+import {RemoteUser} from "../model/remote-user";
+import {UserId} from "../model/types";
+import {LocalUser} from "../model/local-user";
+import {Role} from "../model/user";
 
 @Injectable({
   providedIn: 'root'
@@ -9,6 +11,7 @@ export class UserService {
   private nextId: number = 0;
 
   private _localUser: LocalUser | null = null;
+  private _remoteUsers: { [key: UserId]: RemoteUser } = {};
 
   public constructor() { }
 
@@ -20,7 +23,8 @@ export class UserService {
       id: this.nextId++,
       username,
       role,
-      zoomState: {
+      zoomUser: {
+        id: null,
         isVideoOn: false,
         isAudioOn: false
       }
@@ -34,6 +38,10 @@ export class UserService {
     }
 
     throw Error('User is not logged in');
+  }
+
+  public addRemoteUser(user: RemoteUser): void {
+    this._remoteUsers[user.id] = user;
   }
 
   public isLoggedIn(): boolean {

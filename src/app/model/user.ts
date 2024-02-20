@@ -1,6 +1,14 @@
-import {UserId} from "./group";
+import {UserId} from "./types";
+import {ZoomUser} from "./zoom-user";
 
 export interface User {
   id: UserId;
-  // zoomParticipant: ZoomParticipant;
+  username: string;
+  role: Role;
+  zoomUser: ZoomUser;
+}
+
+export enum Role {
+  TEACHER,
+  STUDENT
 }

@@ -1,5 +1,7 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import {Classroom} from "../model/classroom";
+import {UserService} from "./user.service";
+import {WebSocketService} from "./web-socket.service";
 
 @Injectable({
   providedIn: 'root'
@@ -7,7 +9,10 @@ import {Classroom} from "../model/classroom";
 export class ClassroomService {
   private _classroom: Classroom | null = null;
 
-  public constructor() {}
+  public constructor(
+    private userService: UserService,
+    private webSocketService: WebSocketService
+  ) {}
 
   public async init(): Promise<Classroom> {
     const roomNumber: number = await this.getRoomNumber();
@@ -21,6 +26,12 @@ export class ClassroomService {
     }
 
     throw Error();
+  }
+
+  public sendLocalUserJoined(): void {
+    this.webSocketService.send('/classroom/200/local-user-added', {
+      localUser: this.userService.localUser
+    });
   }
 
   private getRoomNumber(): Promise<number> {

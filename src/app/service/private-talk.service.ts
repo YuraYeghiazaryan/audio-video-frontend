@@ -6,12 +6,11 @@ import {GroupId, PrivateTalkId, UserId} from "../model/types";
   providedIn: 'root'
 })
 export class PrivateTalkService {
-  private groupingService: GroupingService;
   private privateTalks: {[key: PrivateTalkId]: GroupId} = {};
 
-  constructor(groupingService: GroupingService) {
-    this.groupingService = groupingService;
-  }
+  constructor(
+    private groupingService: GroupingService
+  ) {}
 
   public startPrivateTalk(userId: UserId): number { return 0; }
 

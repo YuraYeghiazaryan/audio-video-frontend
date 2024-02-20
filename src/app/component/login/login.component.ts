@@ -4,7 +4,9 @@ import {Router, RouterOutlet} from "@angular/router";
 import {UserService} from "../../service/user.service";
 import {ClassroomService} from "../../service/classroom.service";
 import {Classroom} from "../../model/classroom";
-import {Role} from "../../model/local-user";
+import {Role} from '../../model/user';
+import {WebSocketService} from "../../service/web-socket.service";
+import {LocalUser} from "../../model/local-user";
 
 @Component({
   selector: 'app-login',
@@ -26,6 +28,7 @@ export class LoginComponent implements OnInit {
   constructor(
     private userService: UserService,
     private classroomService: ClassroomService,
+    private webSocketService: WebSocketService,
     private router: Router
   ) {}
 
@@ -34,7 +37,10 @@ export class LoginComponent implements OnInit {
   protected login(): void {
     const classroom: Classroom | null = this.classroomService.classroom;
     if (classroom) {
-      this.userService.login(this.username, this.role).then((): void => {
+      const webSocketConnectPromise: Promise<void> = this.webSocketService.connect();
+      const loginPromise: Promise<LocalUser> = this.userService.login(this.username, this.role);
+
+      Promise.all([webSocketConnectPromise, loginPromise]).then((): void => {
         this.router.navigate([classroom.roomNumber]).then();
       });
     } else {
