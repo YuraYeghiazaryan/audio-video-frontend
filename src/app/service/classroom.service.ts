@@ -2,6 +2,11 @@ import {Injectable} from '@angular/core';
 import {Classroom} from "../model/classroom";
 import {UserService} from "./user.service";
 import {WebSocketService} from "./web-socket.service";
+import {RemoteUser} from "../model/remote-user";
+import {HttpClient, HttpErrorResponse} from "@angular/common/http";
+import {ConnectionOptions} from "../model/connection-options";
+import {catchError, ObservableInput, throwError} from "rxjs";
+import {User} from "../model/user";
 
 @Injectable({
   providedIn: 'root'
@@ -11,12 +16,14 @@ export class ClassroomService {
 
   public constructor(
     private userService: UserService,
-    private webSocketService: WebSocketService
+    private httpClient: HttpClient
   ) {}
 
   public async init(): Promise<Classroom> {
     const roomNumber: number = await this.getRoomNumber();
     this._classroom = {roomNumber};
+    const remoteUsers: RemoteUser[] = await this.getRemoteUsers();
+    this.userService.addRemoteUsers(remoteUsers);
     return this._classroom;
   }
 
@@ -28,9 +35,34 @@ export class ClassroomService {
     throw Error();
   }
 
-  public sendLocalUserJoined(): void {
-    this.webSocketService.send('/classroom/200/local-user-added', {
-      localUser: this.userService.localUser
+  public sendLocalUserJoined(): Promise<void> {
+    return new Promise<void>((resolve, reject): void => {
+      this.httpClient.post(
+        `http://localhost:8090/classroom/${this.classroom.roomNumber}/user-added`,
+        this.userService.localUser
+      )
+        .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
+          reject(error);
+          return throwError(() => new Error('Failed to add user to classroom. Please try again later.'));
+        }))
+        .subscribe((): void => {
+          resolve();
+        });
+    });
+  }
+
+  private getRemoteUsers(): Promise<RemoteUser[]> {
+    return new Promise<RemoteUser[]>((resolve, reject): void => {
+      this.httpClient.get<RemoteUser[]>(
+        `http://localhost:8090/classroom/${this.classroom.roomNumber}/users`
+      )
+        .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
+          reject(error);
+          return throwError(() => new Error('Something bad happened; please try again later.'));
+        }))
+        .subscribe((users: RemoteUser[]): void => {
+          resolve(users);
+        });
     });
   }
 
