@@ -62,11 +62,11 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public toggleVideo(): void {
-    if (!this.userService.localUser.zoomParticipant) {
+    if (!this.userService.localUser.zoomUser) {
       throw Error();
     }
 
-    if (this.userService.localUser.zoomParticipant.bVideoOn) {
+    if (this.userService.localUser.zoomUser.isVideoOn) {
       this.zoomApiServiceService.stopLocalVideo().then()
     } else {
       this.zoomApiServiceService.startLocalVideo().then()
@@ -74,11 +74,11 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   public toggleAudio(): void {
-    if (!this.userService.localUser.zoomParticipant) {
+    if (!this.userService.localUser.zoomUser) {
       throw Error();
     }
 
-    if (this.userService.localUser.zoomParticipant.bVideoOn) {
+    if (this.userService.localUser.zoomUser.isAudioOn) {
       this.zoomApiServiceService.muteLocalAudio().then()
     } else {
       this.zoomApiServiceService.unmuteLocalAudio().then()

@@ -27,14 +27,8 @@ export class WebSocketService {
     }
 
     return new Observable<boolean>((observer: Subscriber<boolean>): void => {
-      const protocol: string = window.location.protocol
-          .replace('http', 'ws')
-          .replace('https', 'wss');
-
-      const host: string = window.location.host;
-
       this.stompClient = new Client({
-        brokerURL: `${protocol}//${host}${url}`,
+        brokerURL: `ws://localhost:8090${url}`,
         onConnect: () => {
           this.onConnected$.emit();
           observer.next(true);
@@ -88,7 +82,7 @@ export class WebSocketService {
     return this.stompClient?.connected || false;
   }
 
-  public subscribe(channel: string, callback: (response: string) => void): void {
+  public subscribe(channel: string, callback: (responseBody: string) => void): void {
     if (this.stompClient?.connected) {
       this.stompClient.subscribe(channel, (response: { body: string; }) => callback(response.body));
     } else {

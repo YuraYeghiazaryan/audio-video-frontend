@@ -37,12 +37,10 @@ export class LoginComponent implements OnInit {
   protected login(): void {
     const classroom: Classroom | null = this.classroomService.classroom;
     if (classroom) {
-      const webSocketConnectPromise: Promise<void> = this.webSocketService.connect();
-      const loginPromise: Promise<LocalUser> = this.userService.login(this.username, this.role);
-
-      Promise.all([webSocketConnectPromise, loginPromise]).then((): void => {
-        this.router.navigate([classroom.roomNumber]).then();
-      });
+      this.userService.login(this.username, this.role)
+        .then((): void => {
+          this.router.navigate([classroom.roomNumber]).then();
+        });
     } else {
       this.router.navigate(['incorrect-url']).then();
     }

@@ -12,20 +12,21 @@ export class MessageHandleServiceService {
 
   constructor(
     private webSocketService: WebSocketService,
-    private classroomService: ClassroomService,
     private userService: UserService
-  ) {
-    const roomNumber: number = this.classroomService.classroom.roomNumber;
+  ) {}
 
-    this.webSocketService.subscribe(`/classroom/${roomNumber}/user-joined`, this.remoteUserAdded.bind(this));
+  public registerMessageHandlers(roomNumber: number): void {
+    this.webSocketService.subscribe(`/topic/${roomNumber}/user-joined`, this.remoteUserAdded.bind(this));
   }
 
-  private remoteUserAdded({user}: {user: User}): void {
+
+  private remoteUserAdded(responseBody: string): void {
+    const user: User = JSON.parse(responseBody) as User;
     if (user.id === this.userService.localUser.id) {
       return;
     }
 
-    if (user.zoomParticipant) {
+    if (user.zoomUser) {
       const remoteUser: RemoteUser = user as RemoteUser;
 
       this.userService.addRemoteUser(remoteUser);

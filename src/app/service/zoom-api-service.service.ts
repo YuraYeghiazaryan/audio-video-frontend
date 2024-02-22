@@ -72,6 +72,10 @@ export class ZoomApiServiceService {
       return Promise.reject(`Trying to turn on local User video:Stream is not found`);
     }
 
+    if (!this.userService.localUser.zoomUser) {
+      throw Error(`Trying to turn on local User video. Zoom user is not found`);
+    }
+
     const localUserVideoElement: HTMLElement | null = document.querySelector(`#u_${this.userService.localUser.id}`)
 
     if (!localUserVideoElement) {
@@ -89,30 +93,50 @@ export class ZoomApiServiceService {
     } else {
       return Promise.reject("Local User video element is not either HTMLVideoElement nor HTMLCanvasElement");
     }
+
+    this.userService.localUser.zoomUser.isVideoOn = true;
   }
 
   public async stopLocalVideo(): Promise<void> {
     if (!this.stream) {
-      return Promise.reject(`Trying to turn off local User video:Stream is not found`);
+      return Promise.reject(`Trying to turn off local User video. Stream is not found`);
+    }
+
+    if (!this.userService.localUser.zoomUser) {
+      throw Error(`Trying to turn off local User video. Zoom user is not found`);
     }
 
     await this.stream.stopVideo();
+
+    this.userService.localUser.zoomUser.isVideoOn = false;
   }
 
   public async unmuteLocalAudio(): Promise<void> {
     if (!this.stream) {
-      return Promise.reject(`Trying to turn on local User audio:Stream is not found`);
+      return Promise.reject(`Trying to turn on local User audio. Stream is not found`);
+    }
+
+    if (!this.userService.localUser.zoomUser) {
+      throw Error(`Trying to turn on local user audio. Zoom user is not found`);
     }
 
     await this.stream.unmuteAudio();
+
+    this.userService.localUser.zoomUser.isAudioOn = true;
   }
 
   public async muteLocalAudio(): Promise<void> {
     if (!this.stream) {
-      return Promise.reject(`Trying to turn off local User viaudiodeo:Stream is not found`);
+      return Promise.reject(`Trying to turn off local User audio. Stream is not found`);
+    }
+
+    if (!this.userService.localUser.zoomUser) {
+      throw Error(`Trying to turn off local User audio. Zoom user is not found`);
     }
 
     await this.stream.muteAudio();
+
+    this.userService.localUser.zoomUser.isAudioOn = false;
   }
 
   public async muteUserAudioLocally(userId: number): Promise<void> {
@@ -167,7 +191,7 @@ export class ZoomApiServiceService {
       )
         .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
           reject(error);
-          return throwError(() => new Error('Something bad happened; please try again later.'));
+          return throwError(() => new Error('Something bad happened: please try again later.'));
         }))
         .subscribe((connectionOptions: ConnectionOptions): void => {
           resolve(connectionOptions);
@@ -213,6 +237,7 @@ export class ZoomApiServiceService {
 
     this.remoteUsersVideoContainer.appendChild(remoteUserVideoElement);
   }
+
   private onUserRemoved(userId: number): void {
     const remoteUserVideoElement: HTMLCanvasElement | null = document.querySelector('#u_' + userId);
     if (!remoteUserVideoElement) {
@@ -228,7 +253,7 @@ export class ZoomApiServiceService {
 
   private startUserVideo(userId: number): void {
     if (!this.stream) {
-      throw Error(`Trying to turn on ${userId} User video:Stream is not found`);
+      throw Error(`Trying to turn on ${userId} User video. Stream is not found`);
     }
 
     const remoteUserVideo: HTMLCanvasElement | null = document.querySelector(`#u_${userId}`);
@@ -241,7 +266,7 @@ export class ZoomApiServiceService {
 
   private stopUserVideo(userId: number): void {
     if (!this.stream) {
-      throw Error(`Trying to turn off ${userId} User video:Stream is not found`);
+      throw Error(`Trying to turn off ${userId} User video. Stream is not found`);
     }
 
     const remoteUserVideo: HTMLCanvasElement | null = document.querySelector(`#u_${userId}`);
@@ -268,7 +293,11 @@ export class ZoomApiServiceService {
 
     participants.forEach((participant: Participant): void => {
       if (participant.userId === this.client.getSessionInfo().userId) {
-        this.userService.localUser.zoomParticipant = participant;
+        this.userService.localUser.zoomUser = {
+          id: participant.userId,
+          isVideoOn: false,
+          isAudioOn: false,
+        };
         this.classroomService.sendLocalUserJoined();
         return;
       }
