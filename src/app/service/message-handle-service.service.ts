@@ -3,7 +3,7 @@ import {WebSocketService} from "./web-socket.service";
 import {ClassroomService} from "./classroom.service";
 import {UserService} from "./user.service";
 import {RemoteUser} from "../model/remote-user";
-import {LocalUser} from "../model/local-user";
+import {User} from "../model/user";
 
 @Injectable({
   providedIn: 'root'
@@ -17,12 +17,20 @@ export class MessageHandleServiceService {
   ) {
     const roomNumber: number = this.classroomService.classroom.roomNumber;
 
-    this.webSocketService.subscribe(`/classroom/${roomNumber}/remote-user-added`, this.remoteUserAdded.bind(this));
+    this.webSocketService.subscribe(`/classroom/${roomNumber}/user-joined`, this.remoteUserAdded.bind(this));
   }
 
-  private remoteUserAdded({localUser}: {localUser: LocalUser}): void {
-    const remoteUser: RemoteUser = localUser as RemoteUser;
+  private remoteUserAdded({user}: {user: User}): void {
+    if (user.id === this.userService.localUser.id) {
+      return;
+    }
 
-    this.userService.addRemoteUser(remoteUser);
+    if (user.zoomParticipant) {
+      const remoteUser: RemoteUser = user as RemoteUser;
+
+      this.userService.addRemoteUser(remoteUser);
+    } else {
+      throw Error(`User ${user} doesn't have zoom participant (is not joined to zoom)`);
+    }
   }
 }

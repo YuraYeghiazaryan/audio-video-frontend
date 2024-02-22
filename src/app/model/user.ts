@@ -1,11 +1,11 @@
 import {UserId} from "./types";
-import {ZoomUser} from "./zoom-user";
+import {Participant} from "@zoom/videosdk";
 
 export interface User {
   id: UserId;
   username: string;
   role: Role;
-  zoomUser: ZoomUser;
+  zoomParticipant: Participant | undefined;
 }
 
 export enum Role {

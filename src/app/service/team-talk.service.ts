@@ -16,13 +16,13 @@ export class TeamTalkService {
 
   public createTeam(users: User[]): void {}
 
-  public joinTeamUser(teamId: TeamId, userId: UserId): void {}
+  public addUserToTeam(teamId: TeamId, user: User): void {}
 
-  public leftTeamUser(teamId: TeamId, userId: UserId): void {}
+  public removeUserFromTeam(teamId: TeamId, user: User): void {}
 
-  public joinTeamUsers(teamId: TeamId, users: User[]): void {}
+  public addUsersToTeam(teamId: TeamId, users: User[]): void {}
 
-  public leftTeamUsers(teamId: TeamId, users: User[]): void {}
+  public remoteUsersFromTeam(teamId: TeamId, users: User[]): void {}
 
   public deleteTeam(teamId: TeamId): void {}
 

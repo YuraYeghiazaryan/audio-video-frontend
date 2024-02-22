@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import ZoomVideo, {Participant, Stream} from '@zoom/videosdk';
+import ZoomVideo, {Participant, ParticipantPropertiesPayload} from '@zoom/videosdk';
 import {ConnectionOptions} from "../model/connection-options";
 import {UserService} from "./user.service";
 import {ClassroomService} from "./classroom.service";
@@ -89,8 +89,6 @@ export class ZoomApiServiceService {
     } else {
       return Promise.reject("Local User video element is not either HTMLVideoElement nor HTMLCanvasElement");
     }
-
-    this.userService.localUser.zoomUser.isVideoOn = true;
   }
 
   public async stopLocalVideo(): Promise<void> {
@@ -99,8 +97,6 @@ export class ZoomApiServiceService {
     }
 
     await this.stream.stopVideo();
-
-    this.userService.localUser.zoomUser.isVideoOn = false;
   }
 
   public async unmuteLocalAudio(): Promise<void> {
@@ -109,8 +105,6 @@ export class ZoomApiServiceService {
     }
 
     await this.stream.unmuteAudio();
-
-    this.userService.localUser.zoomUser.isAudioOn = true;
   }
 
   public async muteLocalAudio(): Promise<void> {
@@ -119,8 +113,6 @@ export class ZoomApiServiceService {
     }
 
     await this.stream.muteAudio();
-
-    this.userService.localUser.zoomUser.isAudioOn = false;
   }
 
   public async muteUserAudioLocally(userId: number): Promise<void> {
@@ -189,16 +181,16 @@ export class ZoomApiServiceService {
       throw Error();
     }
 
-    this.client.on('user-added', (userProperties: any): void => {
+    this.client.on('user-added', (userProperties: ParticipantPropertiesPayload[]): void => {
       if (userProperties[0]?.userId) {
         this.onUserAdded(userProperties[0].userId);
       }
-    })
-    this.client.on('user-removed', (userProperties: any): void => {
+    });
+    this.client.on('user-removed', (userProperties: ParticipantPropertiesPayload[]): void => {
       if (userProperties[0]?.userId) {
         this.onUserRemoved(userProperties[0].userId);
       }
-    })
+    });
 
     this.client.on('peer-video-state-change', (payload: { action: "Start" | "Stop"; userId: number }): void => {
       if (payload.action === 'Start') {
@@ -206,7 +198,7 @@ export class ZoomApiServiceService {
       } else if (payload.action === 'Stop') {
         this.stopUserVideo(payload.userId);
       }
-    })
+    });
   }
 
   private onUserAdded(userId: number): void {
@@ -276,7 +268,7 @@ export class ZoomApiServiceService {
 
     participants.forEach((participant: Participant): void => {
       if (participant.userId === this.client.getSessionInfo().userId) {
-        this.userService.localUser.zoomUser.id = participant.userId;
+        this.userService.localUser.zoomParticipant = participant;
         this.classroomService.sendLocalUserJoined();
         return;
       }

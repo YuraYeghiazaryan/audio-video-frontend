@@ -1,9 +1,28 @@
 import {Injectable} from "@angular/core";
-import {Group} from "../model/group";
 import {User} from "../model/user";
 import {GroupId, UserId} from "../model/types";
 import {UserService} from "./user.service";
 import {AudioSubscriptionService} from "./audio-subscription.service";
+
+class Group {
+  public readonly id: GroupId;
+
+  private static nextId: GroupId = 0;
+  private users: {[key: UserId]: User} = {};
+
+  constructor() {
+    this.id = Group.nextId++;
+  }
+
+  public addUser(user: User): void {
+    this.users[user.id] = user;
+  }
+
+  public removeUser(user: User): void {
+    delete this.users[user.id];
+  }
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -24,16 +43,15 @@ export class GroupingService {
     delete this.groups[groupId];
   }
 
-  public joinGroupUser(groupId: GroupId, userId: UserId): void {}
+  public addUserToGroup(groupId: GroupId, user: User): void {}
 
-  public leftGroupUser(groupId: GroupId, userIde: UserId): void {}
+  public removeUserFromGroup(groupId: GroupId, user: User): void {}
 
-  public joinGroupUsers(groupId: GroupId, users: User[]): void {}
+  public addUsersToGroup(groupId: GroupId, users: User[]): void {}
 
-  public leftGroupUsers(groupId: GroupId, users: User[]): void {}
+  public removeUsersFromGroup(groupId: GroupId, users: User[]): void {}
 
-  public moveUser(fromGroupId: GroupId, toGroupId: GroupId, userId: UserId): void {}
+  public moveUser(fromGroupId: GroupId, toGroupId: GroupId, user: User): void {}
 
-  public joinGroup(toGroupId: GroupId, fromGroupId: GroupId): void {}
-
+  public mergeGroups(toGroupId: GroupId, fromGroupId: GroupId): void {}
 }

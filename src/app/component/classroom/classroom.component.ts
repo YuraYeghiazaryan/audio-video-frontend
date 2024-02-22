@@ -48,9 +48,13 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
           .then((): void => {
             this.joined = true;
           })
-          .catch((cause): void => { console.error(cause) });
+          .catch((cause): void => {
+            console.error(cause);
+          });
       })
-      .catch((): void => { /*@TODO*/ });
+      .catch((cause): void =>{
+        console.error(cause);
+      });
   }
 
   public ngOnDestroy(): void {
@@ -58,7 +62,11 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public toggleVideo(): void {
-    if (this.userService.localUser.zoomUser.isVideoOn) {
+    if (!this.userService.localUser.zoomParticipant) {
+      throw Error();
+    }
+
+    if (this.userService.localUser.zoomParticipant.bVideoOn) {
       this.zoomApiServiceService.stopLocalVideo().then()
     } else {
       this.zoomApiServiceService.startLocalVideo().then()
@@ -66,7 +74,11 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   public toggleAudio(): void {
-    if (this.userService.localUser.zoomUser.isAudioOn) {
+    if (!this.userService.localUser.zoomParticipant) {
+      throw Error();
+    }
+
+    if (this.userService.localUser.zoomParticipant.bVideoOn) {
       this.zoomApiServiceService.muteLocalAudio().then()
     } else {
       this.zoomApiServiceService.unmuteLocalAudio().then()

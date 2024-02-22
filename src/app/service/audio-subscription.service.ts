@@ -1,6 +1,6 @@
 import {Injectable} from "@angular/core";
 import {ZoomApiServiceService} from "./zoom-api-service.service";
-import {User} from "../model/user";
+import {RemoteUser} from "../model/remote-user";
 
 @Injectable({
   providedIn: 'root'
@@ -11,11 +11,21 @@ export class AudioSubscriptionService {
     private zoomApiService: ZoomApiServiceService
   ) {}
 
-  public muteUsers(users: User[]): void {
-    for (const user of users) {
-      // this.zoomApiService.muteUserAudioLocally(user.)
-    }
+  public async subscribe(remoteUsers: RemoteUser[]): Promise<void> {
+    const mutePromises: Promise<void>[] = remoteUsers
+      .map((remoteUser: RemoteUser): Promise<void> =>
+        this.zoomApiService.muteUserAudioLocally(remoteUser.zoomParticipant.userId)
+      );
+
+    return Promise.all(mutePromises).then();
   }
 
-  public unmuteUsers(users: User[]): void {}
+  public async unsubscribe(remoteUsers: RemoteUser[]): Promise<void> {
+    const unmutePromises: Promise<void>[] = remoteUsers
+      .map((remoteUser: RemoteUser): Promise<void> =>
+        this.zoomApiService.unmuteUserAudioLocally(remoteUser.zoomParticipant.userId)
+      );
+
+    return Promise.all(unmutePromises).then();
+  }
 }

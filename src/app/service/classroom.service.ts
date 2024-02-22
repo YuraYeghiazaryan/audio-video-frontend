@@ -1,12 +1,9 @@
 import {Injectable} from '@angular/core';
 import {Classroom} from "../model/classroom";
 import {UserService} from "./user.service";
-import {WebSocketService} from "./web-socket.service";
 import {RemoteUser} from "../model/remote-user";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
-import {ConnectionOptions} from "../model/connection-options";
 import {catchError, ObservableInput, throwError} from "rxjs";
-import {User} from "../model/user";
 
 @Injectable({
   providedIn: 'root'
@@ -38,7 +35,7 @@ export class ClassroomService {
   public sendLocalUserJoined(): Promise<void> {
     return new Promise<void>((resolve, reject): void => {
       this.httpClient.post(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/user-added`,
+        `http://localhost:8090/classroom/${this.classroom.roomNumber}/user-joined`,
         this.userService.localUser
       )
         .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
@@ -80,7 +77,7 @@ export class ClassroomService {
       const roomNumber: number = parseInt(match[1]);
       return Promise.resolve(roomNumber);
     } catch (error) {
-      return Promise.reject('Trying to parse "' + match[1] + '" value to number.');
+      return Promise.reject(`Trying to parse "${match[1]}" value to number.`);
     }
   }
 }

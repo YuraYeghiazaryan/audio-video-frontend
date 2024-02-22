@@ -10,8 +10,6 @@ import {HttpClient, HttpErrorResponse} from "@angular/common/http";
   providedIn: 'root'
 })
 export class UserService {
-  private nextId: number = 0;
-
   private _localUser: LocalUser | null = null;
   private _remoteUsers: { [key: UserId]: RemoteUser } = {};
 
