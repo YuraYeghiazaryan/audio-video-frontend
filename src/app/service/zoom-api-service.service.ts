@@ -288,17 +288,16 @@ export class ZoomApiServiceService {
 
     this.registerEventListeners();
 
-    /* video rendered */
-    const participants: Participant[] = this.client.getAllUser();
-
     const localParticipant: Participant = this.client.getUser(this.client.getSessionInfo().userId)
     this.userService.localUser.zoomUser = {
-      id: localParticipant.userId,
-      isVideoOn: localParticipant.bVideoOn,
-      isAudioOn: localParticipant.muted || false,
-    };
+    id: localParticipant.userId,
+    isVideoOn: localParticipant.bVideoOn,
+    isAudioOn: localParticipant.muted || false,
+  };
     await this.classroomService.sendLocalUserJoined();
 
+    /* video rendered */
+    const participants: Participant[] = this.client.getAllUser();
     participants.forEach((participant: Participant): void => {
       if (participant.userId === this.userService.localUser.zoomUser.id) {
         return;
