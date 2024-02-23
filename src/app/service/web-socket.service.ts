@@ -1,5 +1,5 @@
 import {EventEmitter, Injectable} from "@angular/core";
-import { Client } from '@stomp/stompjs';
+import {ActivationState, Client} from '@stomp/stompjs';
 import {Observable, Subscriber} from "rxjs";
 
 export namespace WebSocket {
@@ -29,13 +29,17 @@ export class WebSocketService {
     return new Observable<boolean>((observer: Subscriber<boolean>): void => {
       this.stompClient = new Client({
         brokerURL: `ws://localhost:8090${url}`,
-        onConnect: () => {
+        onConnect: (): void => {
           this.onConnected$.emit();
           observer.next(true);
           observer.complete();
         },
-        onWebSocketClose: () => {
+        onWebSocketClose: (): void => {
 
+        },
+        onChangeState: (activationState: ActivationState): void => {
+          const localUserConnected: boolean = activationState === ActivationState.ACTIVE;
+          /* @TODO */
         },
         reconnectDelay: 200,
       });

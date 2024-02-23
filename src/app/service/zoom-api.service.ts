@@ -1,20 +1,29 @@
 import {Injectable} from '@angular/core';
-import ZoomVideo, {Participant, ParticipantPropertiesPayload} from '@zoom/videosdk';
+import ZoomVideo, {ConnectionChangePayload, Participant, ParticipantPropertiesPayload} from '@zoom/videosdk';
 import {ConnectionOptions} from "../model/connection-options";
 import {UserService} from "./user.service";
-import {ClassroomService} from "./classroom.service";
 import {Classroom} from "../model/classroom";
 import {LocalUser} from "../model/local-user";
-import {HttpClient, HttpErrorResponse} from "@angular/common/http";
-import {catchError, ObservableInput, throwError} from "rxjs";
+import {HttpClient} from "@angular/common/http";
+import {lastValueFrom} from "rxjs";
+import {LocalUserAction, LocalUserState} from "../state/local-user.state";
+import {ClassroomState} from "../state/classroom.state";
+import {Store} from "@ngxs/store";
+import {ZoomUser} from "../model/user";
+import {ZoomUserId} from "../model/types";
+import {RemoteUser} from "../model/remote-user";
+import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
+import {ConnectionState} from "@zoom/videosdk/dist/types/event-callback";
 
 @Injectable({
   providedIn: 'root'
 })
-export class ZoomApiServiceService {
+export class ZoomApiService {
+  private classroom : Classroom = ClassroomState.defaults;
+  private localUser: LocalUser = LocalUserState.defaults;
+  private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
 
   private localUserVideoContainer: HTMLDivElement | null = null;
-  private remoteUsersVideoContainer: HTMLDivElement | null = null;
   private initialized: boolean = false;
   private connectionOptions: ConnectionOptions | null = null;
 
@@ -23,17 +32,18 @@ export class ZoomApiServiceService {
 
   public constructor(
     private userService: UserService,
-    private classroomService: ClassroomService,
-    private httpClient: HttpClient
-  ) {}
+    private httpClient: HttpClient,
+    private store: Store
+  ) {
+    this.listenStoreChanges();
+  }
 
-  public init(localUserVideoContainer: HTMLDivElement, remoteUsersVideoContainer: HTMLDivElement): Promise<void> {
-    if (!localUserVideoContainer || !remoteUsersVideoContainer) {
+  public init(localUserVideoContainer: HTMLDivElement): Promise<void> {
+    if (!localUserVideoContainer) {
       return Promise.reject();
     }
 
     this.localUserVideoContainer = localUserVideoContainer;
-    this.remoteUsersVideoContainer = remoteUsersVideoContainer;
     this.client = ZoomVideo.createClient();
 
 
@@ -68,15 +78,11 @@ export class ZoomApiServiceService {
   }
 
   public async startLocalVideo(): Promise<void> {
-    if (!this.localUserVideoContainer || !this.stream) {
-      return Promise.reject(`Trying to turn on local User video:Stream is not found`);
+    if (!this.localUserVideoContainer || !this.stream || !this.localUser.zoomUser) {
+      return Promise.reject(`Can't turn on local User video`);
     }
 
-    if (!this.userService.localUser.zoomUser) {
-      throw Error(`Trying to turn on local User video. Zoom user is not found`);
-    }
-
-    const localUserVideoElement: HTMLElement | null = document.querySelector(`#u_${this.userService.localUser.id}`)
+    const localUserVideoElement: HTMLElement | null = document.querySelector(`#u_${this.localUser.zoomUser.id}`)
 
     if (!localUserVideoElement) {
       return Promise.reject("Local User video element does not exist");
@@ -94,7 +100,7 @@ export class ZoomApiServiceService {
       return Promise.reject("Local User video element is not either HTMLVideoElement nor HTMLCanvasElement");
     }
 
-    this.userService.localUser.zoomUser.isVideoOn = true;
+    this.store.dispatch(new LocalUserAction.SetIsVideoOn(true));
   }
 
   public async stopLocalVideo(): Promise<void> {
@@ -102,13 +108,9 @@ export class ZoomApiServiceService {
       return Promise.reject(`Trying to turn off local User video. Stream is not found`);
     }
 
-    if (!this.userService.localUser.zoomUser) {
-      throw Error(`Trying to turn off local User video. Zoom user is not found`);
-    }
-
     await this.stream.stopVideo();
 
-    this.userService.localUser.zoomUser.isVideoOn = false;
+    this.store.dispatch(new LocalUserAction.SetIsVideoOn(false));
   }
 
   public async unmuteLocalAudio(): Promise<void> {
@@ -116,13 +118,9 @@ export class ZoomApiServiceService {
       return Promise.reject(`Trying to turn on local User audio. Stream is not found`);
     }
 
-    if (!this.userService.localUser.zoomUser) {
-      throw Error(`Trying to turn on local user audio. Zoom user is not found`);
-    }
-
     await this.stream.unmuteAudio();
 
-    this.userService.localUser.zoomUser.isAudioOn = true;
+    this.store.dispatch(new LocalUserAction.SetIsAudioOn(true));
   }
 
   public async muteLocalAudio(): Promise<void> {
@@ -130,21 +128,17 @@ export class ZoomApiServiceService {
       return Promise.reject(`Trying to turn off local User audio. Stream is not found`);
     }
 
-    if (!this.userService.localUser.zoomUser) {
-      throw Error(`Trying to turn off local User audio. Zoom user is not found`);
-    }
-
     await this.stream.muteAudio();
 
-    this.userService.localUser.zoomUser.isAudioOn = false;
+    this.store.dispatch(new LocalUserAction.SetIsAudioOn(false));
   }
 
-  public async muteUserAudioLocally(userId: number): Promise<void> {
-    await this.stream.muteUserAudioLocally(userId);
+  public async muteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
+    await this.stream.muteUserAudioLocally(remoteUser.zoomUser.id);
   }
 
-  public async unmuteUserAudioLocally(userId: number): Promise<void> {
-    await this.stream.unmuteUserAudioLocally(userId);
+  public async unmuteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
+    await this.stream.unmuteUserAudioLocally(remoteUser.zoomUser.id);
   }
 
   private createLocalUserVideoElement(): void {
@@ -160,7 +154,7 @@ export class ZoomApiServiceService {
       localUserVideoElement = document.createElement('canvas');
     }
 
-    localUserVideoElement.id = 'u_' + this.userService.localUser.id;
+    localUserVideoElement.id = 'u_' + this.localUser.id;
     localUserVideoElement.width = 200;
     localUserVideoElement.height = 112;
 
@@ -168,36 +162,23 @@ export class ZoomApiServiceService {
   }
 
   private getConnectionOptions(): Promise<ConnectionOptions> {
-    const classroom: Classroom | null = this.classroomService.classroom;
-    const localUser: LocalUser | null = this.userService.localUser;
-
-    if (!classroom) {
+    if (!this.classroom) {
       return Promise.reject('Classroom is not initialized');
     }
 
-    if (!localUser) {
+    if (!this.userService.isLoggedIn()) {
       return Promise.reject('User is not logged in');
     }
 
-    return new Promise<ConnectionOptions>((resolve, reject): void => {
-      this.httpClient.get<ConnectionOptions>(
-        'http://localhost:8090/zoom/connection-options',
-        {
-          params: {
-            sessionName: classroom.roomNumber,
-            username: localUser.username
-          }
+    return lastValueFrom(this.httpClient.get<ConnectionOptions>(
+      'http://localhost:8090/zoom/connection-options',
+      {
+        params: {
+          sessionName: this.classroom.roomNumber,
+          username: this.localUser.username
         }
-      )
-        .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
-          reject(error);
-          return throwError(() => new Error('Something bad happened: please try again later.'));
-        }))
-        .subscribe((connectionOptions: ConnectionOptions): void => {
-          resolve(connectionOptions);
-        });
-    });
-
+      }
+    ));
   }
 
   private registerEventListeners(): void  {
@@ -205,53 +186,21 @@ export class ZoomApiServiceService {
       throw Error();
     }
 
-    this.client.on('user-added', (userProperties: ParticipantPropertiesPayload[]): void => {
-      if (userProperties[0]?.userId) {
-        this.onUserAdded(userProperties[0].userId);
-      }
-    });
-    this.client.on('user-removed', (userProperties: ParticipantPropertiesPayload[]): void => {
-      if (userProperties[0]?.userId) {
-        this.onUserRemoved(userProperties[0].userId);
-      }
+    this.client.on('connection-change', (connectionChangePayload: ConnectionChangePayload): void => {
+      const localUserConnected: boolean = connectionChangePayload.state === ConnectionState.Connected;
+      /* @TODO */
     });
 
     this.client.on('peer-video-state-change', (payload: { action: "Start" | "Stop"; userId: number }): void => {
       if (payload.action === 'Start') {
-        this.startUserVideo(payload.userId);
+        this.renderUserVideo(payload.userId);
       } else if (payload.action === 'Stop') {
         this.stopUserVideo(payload.userId);
       }
     });
   }
 
-  private onUserAdded(userId: number): void {
-    if (!this.remoteUsersVideoContainer) {
-      throw Error();
-    }
-
-    const remoteUserVideoElement: HTMLCanvasElement = document.createElement('canvas');
-    remoteUserVideoElement.id = 'u_' + userId;
-    remoteUserVideoElement.width = 200;
-    remoteUserVideoElement.height = 112;
-
-    this.remoteUsersVideoContainer.appendChild(remoteUserVideoElement);
-  }
-
-  private onUserRemoved(userId: number): void {
-    const remoteUserVideoElement: HTMLCanvasElement | null = document.querySelector('#u_' + userId);
-    if (!remoteUserVideoElement) {
-      return;
-    }
-
-    if (!this.remoteUsersVideoContainer) {
-      throw Error();
-    }
-
-    this.remoteUsersVideoContainer.removeChild(remoteUserVideoElement);
-  }
-
-  private startUserVideo(userId: number): void {
+  private renderUserVideo(userId: ZoomUserId): void {
     if (!this.stream) {
       throw Error(`Trying to turn on ${userId} User video. Stream is not found`);
     }
@@ -264,7 +213,7 @@ export class ZoomApiServiceService {
     this.stream.renderVideo(remoteUserVideo, userId, 200, 112, 0, 0, 3)
   }
 
-  private stopUserVideo(userId: number): void {
+  private stopUserVideo(userId: ZoomUserId): void {
     if (!this.stream) {
       throw Error(`Trying to turn off ${userId} User video. Stream is not found`);
     }
@@ -288,26 +237,48 @@ export class ZoomApiServiceService {
 
     this.registerEventListeners();
 
-    const localParticipant: Participant = this.client.getUser(this.client.getSessionInfo().userId)
-    this.userService.localUser.zoomUser = {
-    id: localParticipant.userId,
-    isVideoOn: localParticipant.bVideoOn,
-    isAudioOn: localParticipant.muted || false,
-  };
-    await this.classroomService.sendLocalUserJoined();
+    const localParticipantId: number = this.client.getSessionInfo().userId;
+    const localParticipant: Participant = this.client.getUser(localParticipantId);
+
+    const zoomUser: ZoomUser = {
+      id: localParticipant.userId,
+      isVideoOn: localParticipant.bVideoOn,
+      isAudioOn: localParticipant.muted || false,
+    };
+
+    this.store.dispatch(new LocalUserAction.SetZoomUser(zoomUser));
 
     /* video rendered */
     const participants: Participant[] = this.client.getAllUser();
     participants.forEach((participant: Participant): void => {
-      if (participant.userId === this.userService.localUser.zoomUser.id) {
+      if (participant.userId === this.localUser.zoomUser?.id) {
         return;
       }
 
-      this.onUserAdded(participant.userId);
+      const remoteUser: RemoteUser | undefined = Object.values(this.remoteUsers).find((remoteUser: RemoteUser): boolean => {
+        return remoteUser.zoomUser.id === participant.userId;
+      });
+
+      if (!remoteUser) {
+        throw Error();
+      }
+
+      // this.addRemoteUser(remoteUser);
       if (participant.bVideoOn) {
-        this.startUserVideo(participant.userId);
+        this.renderUserVideo(participant.userId);
       }
     });
   }
 
+  private listenStoreChanges(): void {
+    this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
+      this.classroom = classroom;
+    });
+    this.store.select(LocalUserState).subscribe((localUser: LocalUser): void => {
+      this.localUser = localUser;
+    });
+    this.store.select(RemoteUsersState).subscribe((remoteUsers: RemoteUsers): void => {
+      this.remoteUsers = remoteUsers;
+    });
+  }
 }

@@ -6,8 +6,8 @@ import {ClassroomService} from "./service/classroom.service";
 import {Classroom} from "./model/classroom";
 import {provideHttpClient} from "@angular/common/http";
 
-export function initializeApp(classroomService: ClassroomService): () => Promise<Classroom> {
-  return (): Promise<Classroom> => {
+export function initializeApp(classroomService: ClassroomService): () => Promise<void> {
+  return (): Promise<void> => {
     return classroomService.init();
   };
 }

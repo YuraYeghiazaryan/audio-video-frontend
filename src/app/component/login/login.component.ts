@@ -7,6 +7,8 @@ import {Classroom} from "../../model/classroom";
 import {Role} from '../../model/user';
 import {WebSocketService} from "../../service/web-socket.service";
 import {LocalUser} from "../../model/local-user";
+import {Store} from "@ngxs/store";
+import {ClassroomState} from "../../state/classroom.state";
 
 @Component({
   selector: 'app-login',
@@ -20,6 +22,8 @@ import {LocalUser} from "../../model/local-user";
   styleUrl: './login.component.css'
 })
 export class LoginComponent implements OnInit {
+  protected classroom: Classroom | undefined;
+
   protected readonly Role = Role;
 
   protected username: string = '';
@@ -27,22 +31,29 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private userService: UserService,
-    private classroomService: ClassroomService,
-    private webSocketService: WebSocketService,
+    private store: Store,
     private router: Router
-  ) {}
+  ) {
+    this.listenStoreChanges();
+  }
 
   public ngOnInit(): void {}
 
   protected login(): void {
-    const classroom: Classroom | null = this.classroomService.classroom;
-    if (classroom) {
-      this.userService.login(this.username, this.role)
-        .then((): void => {
-          this.router.navigate([classroom.roomNumber]).then();
+    if (this.classroom) {
+      this.userService.login(this.username, this.role).then((): void => {
+        this.userService.updateRemoteUsers().then((): void => {
+          this.classroom && this.router.navigate([this.classroom.roomNumber]).then();
         });
+      });
     } else {
       this.router.navigate(['incorrect-url']).then();
     }
+  }
+
+  private listenStoreChanges(): void {
+    this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
+      this.classroom = classroom;
+    });
   }
 }

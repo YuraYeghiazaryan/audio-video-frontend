@@ -1,12 +1,18 @@
 <div id="my-self-view-video"></div>
-<h1> {{ this.userService.localUser.username }} </h1>
+<h1> {{ this.localUser?.username }} </h1>
 
 <button (click)="toggleVideo()" [disabled]="!joined">
-  {{ this.userService.localUser.zoomUser?.isVideoOn ? 'Off Video' : 'On Video' }}
+  {{ this.localUser?.zoomUser?.isVideoOn ? 'Off Video' : 'On Video' }}
 </button>
 
 <button (click)="toggleAudio()" [disabled]="!joined">
-  {{ this.userService.localUser.zoomUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
+  {{ this.localUser?.zoomUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
 </button>
 
-<div id="remote-users"></div>
+<div id="remote-users">
+  <div *ngFor="let remoteUser of this.remoteUsers | filterOnlineUsers">
+    {{ remoteUser.username }} {{ remoteUser.id }}
+
+    <canvas [id]="remoteUser.zoomUser.id" width="200" height="122"></canvas>
+  </div>
+</div>

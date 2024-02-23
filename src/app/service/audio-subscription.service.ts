@@ -1,5 +1,5 @@
 import {Injectable} from "@angular/core";
-import {ZoomApiServiceService} from "./zoom-api-service.service";
+import {ZoomApiService} from "./zoom-api.service";
 import {RemoteUser} from "../model/remote-user";
 
 @Injectable({
@@ -8,7 +8,7 @@ import {RemoteUser} from "../model/remote-user";
 export class AudioSubscriptionService {
 
   constructor(
-    private zoomApiService: ZoomApiServiceService
+    private zoomApiService: ZoomApiService
   ) {}
 
   public async subscribe(remoteUsers: RemoteUser[]): Promise<void> {

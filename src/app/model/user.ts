@@ -1,11 +1,17 @@
 import {UserId, ZoomUserId} from "./types";
-import {Participant} from "@zoom/videosdk";
 
 export interface User {
   id: UserId;
   username: string;
   role: Role;
-  zoomUser: ZoomUser;
+  connectionState: ConnectionState;
+  zoomUser?: ZoomUser;
+}
+
+export enum ConnectionState {
+  ONLINE,
+  OFFLINE,
+  PENDING
 }
 
 export interface ZoomUser {
