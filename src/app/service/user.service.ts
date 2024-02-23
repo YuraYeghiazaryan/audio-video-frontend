@@ -26,6 +26,7 @@ export class UserService {
     this.listenStoreChanges();
   }
 
+  /** initialize localUser object */
   public async login(username: string, role: Role): Promise<LocalUser> {
     const localUser: LocalUser = await this.sendLogin(username, role);
 
@@ -34,6 +35,7 @@ export class UserService {
     return localUser;
   }
 
+  /** get all users from BE and add them to remoteUsers*/
   public async updateRemoteUsers(): Promise<void> {
     const remoteUsers: RemoteUser[] = await lastValueFrom(this.httpClient.get<RemoteUser[]>(
       `http://localhost:8090/classroom/${this.classroom?.roomNumber}/users`
@@ -42,16 +44,19 @@ export class UserService {
     this.addRemoteUsers(remoteUsers);
   }
 
+  /** add remoteUser to remoteUsers*/
   public addRemoteUser(remoteUser: RemoteUser): void {
     if (remoteUser.id !== this.localUser?.id) {
       this.store.dispatch(new RemoteUsersAction.AddRemoteUser(remoteUser));
     }
   }
 
+  /** delete user from remoteUsers*/
   public removeRemoteUser(remoteUser: RemoteUser): void {
     this.store.dispatch(new RemoteUsersAction.RemoveRemoteUser(remoteUser));
   }
 
+  /** add remote users to remoteUsers*/
   public addRemoteUsers(remoteUsers: RemoteUser[]): void {
     for (const remoteUser of remoteUsers) {
       this.addRemoteUser(remoteUser);
@@ -62,6 +67,7 @@ export class UserService {
     return !!this.localUser;
   }
 
+  /** send user credentials to BE and get localUser object */
   private sendLogin(username: string, role: Role): Promise<LocalUser> {
     return lastValueFrom(this.httpClient.get<LocalUser>(
       `http://localhost:8090/user/login`,

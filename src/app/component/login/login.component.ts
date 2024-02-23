@@ -39,6 +39,7 @@ export class LoginComponent implements OnInit {
 
   public ngOnInit(): void {}
 
+  /** login app, then navigate to classroom */
   protected login(): void {
     if (this.classroom) {
       this.userService.login(this.username, this.role).then((): void => {
@@ -51,6 +52,7 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  /** listen for 'classroom' changes */
   private listenStoreChanges(): void {
     this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
       this.classroom = classroom;
