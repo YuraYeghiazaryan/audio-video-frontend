@@ -2,28 +2,27 @@ import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
 import {ZoomApiService} from "../../service/zoom-api.service";
 import {UserService} from "../../service/user.service";
 import {Router} from "@angular/router";
-import {ClassroomService} from "../../service/classroom.service";
-import {NgForOf} from "@angular/common";
+import {NgForOf, NgIf} from "@angular/common";
 import {Classroom} from "../../model/classroom";
 import {LocalUser} from "../../model/local-user";
 import {Store} from "@ngxs/store";
 import {ClassroomState} from "../../state/classroom.state";
 import {LocalUserAction, LocalUserState} from "../../state/local-user.state";
-import {RemoteUser} from "../../model/remote-user";
 import {RemoteUsers, RemoteUsersState} from "../../state/remote-users.state";
 import {FilterOnlineUsersPipe} from "../../pipe/filter-online-users.pipe";
-import {catchError, lastValueFrom, ObservableInput, throwError} from "rxjs";
+import {catchError, ObservableInput, throwError} from "rxjs";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {WebSocketService} from "../../service/web-socket.service";
 import {MessageHandleService} from "../../service/message-handle.service";
-import {ConnectionState} from "../../model/user";
+import {RoomConnection} from "../../model/user";
 
 @Component({
   selector: 'app-classroom',
   standalone: true,
   imports: [
     NgForOf,
-    FilterOnlineUsersPipe
+    FilterOnlineUsersPipe,
+    NgIf
   ],
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.css'
@@ -48,19 +47,14 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public ngOnInit(): void {
-    const classroomNumber: number | undefined = this.classroom?.roomNumber;
-    const userLoggedIn: boolean = this.userService.isLoggedIn();
-
-    if (!classroomNumber || !userLoggedIn) {
-      this.router.navigate([classroomNumber, 'login']).then();
+    if (!this.classroom.roomNumber || !this.userService.isLoggedIn()) {
+      this.router.navigate([this.classroom.roomNumber, 'login']).then();
     }
   }
 
   public ngAfterViewInit(): void {
-    const localUserVideoContainer: HTMLDivElement | null = document.querySelector('#my-self-view-video');
-
-    if (!localUserVideoContainer) {
-      throw Error();
+    if (!this.classroom.roomNumber || !this.userService.isLoggedIn()) {
+      return;
     }
 
     /* connect to VCR web socket */
@@ -74,7 +68,7 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     /* join to Zoom */
-    const zoomJoinPromise: Promise<void> = this.zoomApiServiceService.init(localUserVideoContainer)
+    const zoomJoinPromise: Promise<void> = this.zoomApiServiceService.init()
       .then((): Promise<void> =>
         this.zoomApiServiceService.join()
           .then((): void => {
@@ -85,7 +79,7 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
     Promise.all([websocketConnectPromise, zoomJoinPromise])
       .then((): void => {
         /* connected to VCR web socket and joined to Zoom */
-        this.store.dispatch(new LocalUserAction.SetConnectionState(ConnectionState.ONLINE));
+        this.store.dispatch(new LocalUserAction.SetConnectionState(RoomConnection.ONLINE));
 
         /* notify VCR server about local user readiness */
         this.httpClient.post<void>(

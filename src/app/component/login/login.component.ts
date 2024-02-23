@@ -2,11 +2,8 @@ import {Component, OnInit} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {Router, RouterOutlet} from "@angular/router";
 import {UserService} from "../../service/user.service";
-import {ClassroomService} from "../../service/classroom.service";
 import {Classroom} from "../../model/classroom";
 import {Role} from '../../model/user';
-import {WebSocketService} from "../../service/web-socket.service";
-import {LocalUser} from "../../model/local-user";
 import {Store} from "@ngxs/store";
 import {ClassroomState} from "../../state/classroom.state";
 

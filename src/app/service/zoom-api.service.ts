@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import ZoomVideo, {ConnectionChangePayload, Participant, ParticipantPropertiesPayload} from '@zoom/videosdk';
+import ZoomVideo, {ConnectionChangePayload, ConnectionState, Participant} from '@zoom/videosdk';
 import {ConnectionOptions} from "../model/connection-options";
 import {UserService} from "./user.service";
 import {Classroom} from "../model/classroom";
@@ -13,7 +13,7 @@ import {ZoomUser} from "../model/user";
 import {ZoomUserId} from "../model/types";
 import {RemoteUser} from "../model/remote-user";
 import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
-import {ConnectionState} from "@zoom/videosdk/dist/types/event-callback";
+import {ConnectionHandleService} from "./connection-handle.service";
 
 @Injectable({
   providedIn: 'root'
@@ -23,7 +23,6 @@ export class ZoomApiService {
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
 
-  private localUserVideoContainer: HTMLDivElement | null = null;
   private initialized: boolean = false;
   private connectionOptions: ConnectionOptions | null = null;
 
@@ -32,20 +31,15 @@ export class ZoomApiService {
 
   public constructor(
     private userService: UserService,
+    private connectionHandleService: ConnectionHandleService,
     private httpClient: HttpClient,
     private store: Store
   ) {
     this.listenStoreChanges();
   }
 
-  public init(localUserVideoContainer: HTMLDivElement): Promise<void> {
-    if (!localUserVideoContainer) {
-      return Promise.reject();
-    }
-
-    this.localUserVideoContainer = localUserVideoContainer;
+  public init(): Promise<void> {
     this.client = ZoomVideo.createClient();
-
 
     const connectionOptionsPromise: Promise<void> = this.getConnectionOptions()
       .then((connectionOptions: ConnectionOptions): void => {
@@ -78,7 +72,7 @@ export class ZoomApiService {
   }
 
   public async startLocalVideo(): Promise<void> {
-    if (!this.localUserVideoContainer || !this.stream || !this.localUser.zoomUser) {
+    if (!this.stream || !this.localUser.zoomUser) {
       return Promise.reject(`Can't turn on local User video`);
     }
 
@@ -141,26 +135,6 @@ export class ZoomApiService {
     await this.stream.unmuteUserAudioLocally(remoteUser.zoomUser.id);
   }
 
-  private createLocalUserVideoElement(): void {
-    if (!this.localUserVideoContainer) {
-      throw Error();
-    }
-
-    let localUserVideoElement: HTMLVideoElement | HTMLCanvasElement;
-
-    if (this.stream.isRenderSelfViewWithVideoElement()) {
-      localUserVideoElement = document.createElement('video');
-    } else {
-      localUserVideoElement = document.createElement('canvas');
-    }
-
-    localUserVideoElement.id = 'u_' + this.localUser.id;
-    localUserVideoElement.width = 200;
-    localUserVideoElement.height = 112;
-
-    this.localUserVideoContainer.appendChild(localUserVideoElement);
-  }
-
   private getConnectionOptions(): Promise<ConnectionOptions> {
     if (!this.classroom) {
       return Promise.reject('Classroom is not initialized');
@@ -188,7 +162,8 @@ export class ZoomApiService {
 
     this.client.on('connection-change', (connectionChangePayload: ConnectionChangePayload): void => {
       const localUserConnected: boolean = connectionChangePayload.state === ConnectionState.Connected;
-      /* @TODO */
+
+      this.connectionHandleService.zoomConnectionChanged(localUserConnected);
     });
 
     this.client.on('peer-video-state-change', (payload: { action: "Start" | "Stop"; userId: number }): void => {
@@ -233,7 +208,6 @@ export class ZoomApiService {
 
     this.stream = this.client.getMediaStream();
     await this.stream.startAudio({mute: true, backgroundNoiseSuppression: true});
-    this.createLocalUserVideoElement();
 
     this.registerEventListeners();
 

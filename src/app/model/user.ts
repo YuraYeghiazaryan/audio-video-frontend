@@ -4,11 +4,11 @@ export interface User {
   id: UserId;
   username: string;
   role: Role;
-  connectionState: ConnectionState;
+  roomConnection: RoomConnection;
   zoomUser?: ZoomUser;
 }
 
-export enum ConnectionState {
+export enum RoomConnection {
   ONLINE,
   OFFLINE,
   PENDING

@@ -1,7 +1,7 @@
 import {Action, State, StateContext} from '@ngxs/store';
 import {Injectable} from '@angular/core';
 import {LocalUser} from "../model/local-user";
-import {ConnectionState, Role, ZoomUser} from "../model/user";
+import {Role, RoomConnection, ZoomUser} from "../model/user";
 
 export namespace LocalUserAction {
   export class SetLocalUser {
@@ -26,7 +26,7 @@ export namespace LocalUserAction {
 
   export class SetConnectionState {
     public static readonly type: string = '[local-user] set connectionState';
-    constructor(public connectionState: ConnectionState) {}
+    constructor(public connectionState: RoomConnection) {}
   }
 }
 
@@ -36,12 +36,12 @@ export namespace LocalUserAction {
 })
 @Injectable()
 export class LocalUserState {
-  static readonly storeName: string = 'local-user';
+  static readonly storeName: string = 'localUser';
   static readonly defaults: LocalUser = {
     id: -1,
     role: Role.STUDENT,
     username: "",
-    connectionState: ConnectionState.OFFLINE
+    roomConnection: RoomConnection.OFFLINE
   };
 
   @Action(LocalUserAction.SetLocalUser)
@@ -78,7 +78,7 @@ export class LocalUserState {
 
   @Action(LocalUserAction.SetConnectionState)
   public setConnectionState({patchState}: StateContext<LocalUser>, {connectionState}: LocalUserAction.SetConnectionState): void {
-    patchState({connectionState})
+    patchState({roomConnection: connectionState})
   }
 }
 

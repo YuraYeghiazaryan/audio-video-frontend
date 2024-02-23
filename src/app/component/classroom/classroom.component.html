@@ -1,4 +1,7 @@
-<div id="my-self-view-video"></div>
+<div *ngIf="localUser.zoomUser" id="my-self-view-video">
+  {{ localUser.username }} {{ localUser.id }}
+  <canvas [id]="'u_' + localUser.zoomUser?.id" width="200" height="122"></canvas>
+</div>
 <h1> {{ this.localUser?.username }} </h1>
 
 <button (click)="toggleVideo()" [disabled]="!joined">
@@ -13,6 +16,6 @@
   <div *ngFor="let remoteUser of this.remoteUsers | filterOnlineUsers">
     {{ remoteUser.username }} {{ remoteUser.id }}
 
-    <canvas [id]="remoteUser.zoomUser.id" width="200" height="122"></canvas>
+    <canvas [id]="'u_' + remoteUser.zoomUser?.id" width="200" height="122"></canvas>
   </div>
 </div>

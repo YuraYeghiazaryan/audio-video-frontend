@@ -1,14 +1,11 @@
 import {Injectable} from '@angular/core';
 import {WebSocketService} from "./web-socket.service";
-import {ClassroomService} from "./classroom.service";
 import {UserService} from "./user.service";
 import {RemoteUser} from "../model/remote-user";
-import {ConnectionState, User} from "../model/user";
-import {ClassroomState} from "../state/classroom.state";
-import {Classroom} from "../model/classroom";
+import {RoomConnection, User} from "../model/user";
 import {LocalUserState} from "../state/local-user.state";
 import {LocalUser} from "../model/local-user";
-import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
+import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../state/remote-users.state";
 import {Store} from "@ngxs/store";
 import {ZoomApiService} from "./zoom-api.service";
 import {UserId} from "../model/types";
@@ -35,8 +32,7 @@ export class MessageHandleService {
   }
 
 
-  private remoteUserConnected(responseBody: string): void {
-    const user: User = JSON.parse(responseBody) as User;
+  private remoteUserConnected(user: User): void {
     if (user.id === this.localUser?.id) {
       return;
     }
@@ -51,12 +47,15 @@ export class MessageHandleService {
   }
 
 
-  private userConnectionStateChanged(responseBody: string): void {
-    const {userId, connectionState}: {userId: UserId, connectionState: ConnectionState} = JSON.parse(responseBody) as {userId: UserId, connectionState: ConnectionState};
-
+  private userConnectionStateChanged({userId, connected}: {userId: UserId, connected: boolean}): void {
     const remoteUser: RemoteUser = this.remoteUsers[userId];
+    let connectionState: RoomConnection = RoomConnection.OFFLINE;
 
-    /* @TODO change connection state */
+    if (connected) {
+      connectionState = RoomConnection.ONLINE;
+    }
+
+    this.store.dispatch(new RemoteUsersAction.SetConnectionState(remoteUser, connectionState));
   }
 
   private listenStoreChanges(): void {

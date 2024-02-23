@@ -1,6 +1,7 @@
 import {EventEmitter, Injectable} from "@angular/core";
 import {ActivationState, Client} from '@stomp/stompjs';
 import {Observable, Subscriber} from "rxjs";
+import {ConnectionHandleService} from "./connection-handle.service";
 
 export namespace WebSocket {
   export enum MessageSendStatus {
@@ -19,13 +20,11 @@ export class WebSocketService {
   private readonly MESSAGE_LENGTH_LIMIT: number = 1000 * 1024; /* bytes */
   public readonly onConnected$: EventEmitter<void> = new EventEmitter<void>();
 
-  constructor() {}
+  constructor(
+    private connectionHandleService: ConnectionHandleService
+  ) {}
 
   public connect(url: string): Observable<boolean> {
-    if (this.stompClient?.connected) {
-      return this.reconnect();
-    }
-
     return new Observable<boolean>((observer: Subscriber<boolean>): void => {
       this.stompClient = new Client({
         brokerURL: `ws://localhost:8090${url}`,
@@ -34,44 +33,15 @@ export class WebSocketService {
           observer.next(true);
           observer.complete();
         },
-        onWebSocketClose: (): void => {
-
-        },
         onChangeState: (activationState: ActivationState): void => {
           const localUserConnected: boolean = activationState === ActivationState.ACTIVE;
-          /* @TODO */
+
+          this.connectionHandleService.webSocketConnectionChanged(localUserConnected);
         },
         reconnectDelay: 200,
       });
 
       this.stompClient.activate();
-    });
-  }
-
-  public reconnect(): Observable<boolean> {
-    return new Observable<boolean>((observer: Subscriber<boolean>): void => {
-      if (this.stompClient?.connected) { /* if connected, disconnect before reconnection */
-        this.stompClient.forceDisconnect();
-        this.stompClient.deactivate().then((): void => {
-          if (!this.stompClient) {
-            return;
-          }
-           this.stompClient.onConnect = (): void => {
-            observer.next(true);
-            observer.complete();
-          };
-          this.stompClient.activate();
-        });
-      } else {
-        if (!this.stompClient) {
-          return;
-        }
-        this.stompClient.onConnect = (): void => {
-          observer.next(true);
-          observer.complete();
-        };
-        this.stompClient.activate();
-      }
     });
   }
 
@@ -86,9 +56,9 @@ export class WebSocketService {
     return this.stompClient?.connected || false;
   }
 
-  public subscribe(channel: string, callback: (responseBody: string) => void): void {
+  public subscribe(channel: string, callback: (responseBody: any) => void): void {
     if (this.stompClient?.connected) {
-      this.stompClient.subscribe(channel, (response: { body: string; }) => callback(response.body));
+      this.stompClient.subscribe(channel, (response: { body: string; }) => callback(JSON.parse(response.body)));
     } else {
       throw Error('Socket connection is not established yet...');
     }

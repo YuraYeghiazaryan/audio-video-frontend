@@ -1,7 +1,7 @@
 import {Injectable} from "@angular/core";
 import {GroupingService} from "./grouping.service";
 import {User} from "../model/user";
-import {GroupId, TeamId, UserId} from "../model/types";
+import {GroupId, TeamId} from "../model/types";
 
 
 @Injectable({
