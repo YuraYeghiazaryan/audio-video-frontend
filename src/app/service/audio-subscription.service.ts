@@ -14,7 +14,7 @@ export class AudioSubscriptionService {
   public async subscribe(remoteUsers: RemoteUser[]): Promise<void> {
     const mutePromises: Promise<void>[] = remoteUsers
       .map((remoteUser: RemoteUser): Promise<void> =>
-        this.zoomApiService.muteUserAudioLocally(remoteUser.zoomParticipant.userId)
+        this.zoomApiService.muteUserAudioLocally(remoteUser)
       );
 
     return Promise.all(mutePromises).then();
@@ -23,7 +23,7 @@ export class AudioSubscriptionService {
   public async unsubscribe(remoteUsers: RemoteUser[]): Promise<void> {
     const unmutePromises: Promise<void>[] = remoteUsers
       .map((remoteUser: RemoteUser): Promise<void> =>
-        this.zoomApiService.unmuteUserAudioLocally(remoteUser.zoomParticipant.userId)
+        this.zoomApiService.unmuteUserAudioLocally(remoteUser)
       );
 
     return Promise.all(unmutePromises).then();

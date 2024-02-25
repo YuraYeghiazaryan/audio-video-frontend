@@ -1,8 +1,5 @@
-import {Action, Selector, State, StateContext} from '@ngxs/store';
+import {Action, State, StateContext} from '@ngxs/store';
 import {Injectable} from '@angular/core';
-import {LocalUser} from "../model/local-user";
-import {RemoteUser} from "../model/remote-user";
-import {UserId} from "../model/types";
 import {Classroom} from "../model/classroom";
 
 export namespace ClassroomAction {

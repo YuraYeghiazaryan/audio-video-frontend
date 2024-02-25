@@ -12,6 +12,7 @@ export class ClassroomService {
     this.listenStoreChanges();
   }
 
+  /** before all. Getting room number */
   public async init(): Promise<void> {
     const roomNumber: number = await this.getRoomNumber();
     this.store.dispatch(new ClassroomAction.SetRoomNumber(roomNumber));

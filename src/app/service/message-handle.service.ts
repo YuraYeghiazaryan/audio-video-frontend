@@ -1,11 +1,8 @@
 import {Injectable} from '@angular/core';
 import {WebSocketService} from "./web-socket.service";
-import {ClassroomService} from "./classroom.service";
 import {UserService} from "./user.service";
 import {RemoteUser} from "../model/remote-user";
 import {ConnectionState, User} from "../model/user";
-import {ClassroomState} from "../state/classroom.state";
-import {Classroom} from "../model/classroom";
 import {LocalUserState} from "../state/local-user.state";
 import {LocalUser} from "../model/local-user";
 import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
@@ -35,6 +32,7 @@ export class MessageHandleService {
   }
 
 
+  /** get remote user from BE and add him to remoteUsers of all users */
   private remoteUserConnected(responseBody: string): void {
     const user: User = JSON.parse(responseBody) as User;
     if (user.id === this.localUser?.id) {
@@ -51,6 +49,7 @@ export class MessageHandleService {
   }
 
 
+  /** get new state from BE */
   private userConnectionStateChanged(responseBody: string): void {
     const {userId, connectionState}: {userId: UserId, connectionState: ConnectionState} = JSON.parse(responseBody) as {userId: UserId, connectionState: ConnectionState};
 

@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import ZoomVideo, {ConnectionChangePayload, Participant, ParticipantPropertiesPayload} from '@zoom/videosdk';
+import ZoomVideo, {ConnectionChangePayload, Participant} from '@zoom/videosdk';
 import {ConnectionOptions} from "../model/connection-options";
 import {UserService} from "./user.service";
 import {Classroom} from "../model/classroom";
@@ -38,6 +38,7 @@ export class ZoomApiService {
     this.listenStoreChanges();
   }
 
+  /** zoom client creation, getting jwt token, initialize client */
   public init(localUserVideoContainer: HTMLDivElement): Promise<void> {
     if (!localUserVideoContainer) {
       return Promise.reject();
@@ -60,6 +61,7 @@ export class ZoomApiService {
     return Promise.all([connectionOptionsPromise, initPromise]).then();
   }
 
+  /** join client to zoom */
   public join(): Promise<void> {
     const videoSDKJWT: string | undefined = this.connectionOptions?.videoSDKJWT;
     const username: string | undefined = this.connectionOptions?.username;
@@ -161,6 +163,7 @@ export class ZoomApiService {
     this.localUserVideoContainer.appendChild(localUserVideoElement);
   }
 
+  /** if user is logged in, get connection options from BE */
   private getConnectionOptions(): Promise<ConnectionOptions> {
     if (!this.classroom) {
       return Promise.reject('Classroom is not initialized');
@@ -200,6 +203,7 @@ export class ZoomApiService {
     });
   }
 
+  /** render remote user video when joined to zoom or when user turn on video */
   private renderUserVideo(userId: ZoomUserId): void {
     if (!this.stream) {
       throw Error(`Trying to turn on ${userId} User video. Stream is not found`);
@@ -213,6 +217,7 @@ export class ZoomApiService {
     this.stream.renderVideo(remoteUserVideo, userId, 200, 112, 0, 0, 3)
   }
 
+  /** stop remote user video when user turn off video */
   private stopUserVideo(userId: ZoomUserId): void {
     if (!this.stream) {
       throw Error(`Trying to turn off ${userId} User video. Stream is not found`);
@@ -226,6 +231,7 @@ export class ZoomApiService {
     this.stream.stopRenderVideo(remoteUserVideo, userId);
   }
 
+  /** initialize stream, get media stream, register event listeners and render videos of remote users */
   private async onJoin(): Promise<void> {
     if (!this.client) {
       throw Error('Client is not found after joining');
@@ -240,6 +246,7 @@ export class ZoomApiService {
     const localParticipantId: number = this.client.getSessionInfo().userId;
     const localParticipant: Participant = this.client.getUser(localParticipantId);
 
+    /* initialize local zoom state */
     const zoomUser: ZoomUser = {
       id: localParticipant.userId,
       isVideoOn: localParticipant.bVideoOn,

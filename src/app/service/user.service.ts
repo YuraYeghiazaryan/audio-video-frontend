@@ -1,10 +1,9 @@
 import {Injectable} from '@angular/core';
 import {RemoteUser} from "../model/remote-user";
-import {UserId} from "../model/types";
 import {LocalUser} from "../model/local-user";
 import {Role} from "../model/user";
-import {catchError, lastValueFrom, ObservableInput, throwError} from "rxjs";
-import {HttpClient, HttpErrorResponse} from "@angular/common/http";
+import {lastValueFrom} from "rxjs";
+import {HttpClient} from "@angular/common/http";
 import {LocalUserAction, LocalUserState} from "../state/local-user.state";
 import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../state/remote-users.state";
 import {Store} from "@ngxs/store";

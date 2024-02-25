@@ -2,17 +2,15 @@ import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
 import {ZoomApiService} from "../../service/zoom-api.service";
 import {UserService} from "../../service/user.service";
 import {Router} from "@angular/router";
-import {ClassroomService} from "../../service/classroom.service";
 import {NgForOf} from "@angular/common";
 import {Classroom} from "../../model/classroom";
 import {LocalUser} from "../../model/local-user";
 import {Store} from "@ngxs/store";
 import {ClassroomState} from "../../state/classroom.state";
 import {LocalUserAction, LocalUserState} from "../../state/local-user.state";
-import {RemoteUser} from "../../model/remote-user";
 import {RemoteUsers, RemoteUsersState} from "../../state/remote-users.state";
 import {FilterOnlineUsersPipe} from "../../pipe/filter-online-users.pipe";
-import {catchError, lastValueFrom, ObservableInput, throwError} from "rxjs";
+import {catchError, ObservableInput, throwError} from "rxjs";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {WebSocketService} from "../../service/web-socket.service";
 import {MessageHandleService} from "../../service/message-handle.service";
@@ -47,6 +45,7 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
     this.listenStoreChanges();
   }
 
+  /** logic, running during initialization classroom. if user is not logged in or classroom number doesn't exist, navigate to login page */
   public ngOnInit(): void {
     const classroomNumber: number | undefined = this.classroom?.roomNumber;
     const userLoggedIn: boolean = this.userService.isLoggedIn();
@@ -56,6 +55,8 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+
+  /** logic, running after classroom initialization.Connect to VCR and Zoom. */
   public ngAfterViewInit(): void {
     const localUserVideoContainer: HTMLDivElement | null = document.querySelector('#my-self-view-video');
 
@@ -93,6 +94,7 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
           this.localUser
         );
 
+        /* listening for new user adding and remote user connection state changing */
         this.messageHandleServiceService.registerMessageHandlers(this.classroom.roomNumber);
       })
       .catch((cause): void => {
