@@ -63,7 +63,7 @@ export class UserService {
   }
 
   public isLoggedIn(): boolean {
-    return !!this.localUser;
+    return this.localUser.id !== -1;
   }
 
   /** send user credentials to BE and get localUser object */

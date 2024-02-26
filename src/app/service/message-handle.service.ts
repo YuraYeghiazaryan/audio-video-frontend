@@ -2,12 +2,11 @@ import {Injectable} from '@angular/core';
 import {WebSocketService} from "./web-socket.service";
 import {UserService} from "./user.service";
 import {RemoteUser} from "../model/remote-user";
-import {ConnectionState, User} from "../model/user";
+import {RoomConnection, User} from "../model/user";
 import {LocalUserState} from "../state/local-user.state";
 import {LocalUser} from "../model/local-user";
-import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
+import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../state/remote-users.state";
 import {Store} from "@ngxs/store";
-import {ZoomApiService} from "./zoom-api.service";
 import {UserId} from "../model/types";
 
 @Injectable({
@@ -20,7 +19,6 @@ export class MessageHandleService {
   constructor(
     private webSocketService: WebSocketService,
     private userService: UserService,
-    private zoomApiService: ZoomApiService,
     private store: Store
   ) {
     this.listenStoreChanges();
@@ -33,8 +31,7 @@ export class MessageHandleService {
 
 
   /** get remote user from BE and add him to remoteUsers of all users */
-  private remoteUserConnected(responseBody: string): void {
-    const user: User = JSON.parse(responseBody) as User;
+  private remoteUserConnected(user: User): void {
     if (user.id === this.localUser?.id) {
       return;
     }
@@ -49,13 +46,17 @@ export class MessageHandleService {
   }
 
 
+
   /** get new state from BE */
-  private userConnectionStateChanged(responseBody: string): void {
-    const {userId, connectionState}: {userId: UserId, connectionState: ConnectionState} = JSON.parse(responseBody) as {userId: UserId, connectionState: ConnectionState};
-
+  private userConnectionStateChanged({userId, connected}: {userId: UserId, connected: boolean}): void {
     const remoteUser: RemoteUser = this.remoteUsers[userId];
+    let connectionState: RoomConnection = RoomConnection.OFFLINE;
 
-    /* @TODO change connection state */
+    if (connected) {
+      connectionState = RoomConnection.ONLINE;
+    }
+
+    this.store.dispatch(new RemoteUsersAction.SetConnectionState(remoteUser, connectionState));
   }
 
   private listenStoreChanges(): void {
