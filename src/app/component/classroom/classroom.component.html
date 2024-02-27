@@ -13,7 +13,7 @@
 </button>
 
 <div id="remote-users">
-  <div style="border: black" *ngFor="let remoteUser of gexam(this.remoteUsers)">
+  <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | filterOnlineUsers)">
     {{ remoteUser.username }} {{ remoteUser.id }}
 
     <canvas [id]="'u_' + remoteUser.zoomUser.id" width="200" height="122"></canvas>

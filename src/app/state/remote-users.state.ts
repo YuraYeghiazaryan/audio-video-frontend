@@ -36,7 +36,7 @@ export class RemoteUsersState {
 
   @Action(RemoteUsersAction.AddRemoteUser)
   addRemoteUser({getState, setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.AddRemoteUser): void {
-    const state: RemoteUsers = getState();
+    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
     state[remoteUser.id] = remoteUser;
 
     setState(state);
@@ -44,7 +44,7 @@ export class RemoteUsersState {
 
   @Action(RemoteUsersAction.RemoveRemoteUser)
   removeRemoteUser({getState, setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.RemoveRemoteUser): void {
-    const state: RemoteUsers = getState();
+    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
     delete state[remoteUser.id];
 
     setState(state);
@@ -52,7 +52,7 @@ export class RemoteUsersState {
 
   @Action(RemoteUsersAction.SetConnectionState)
   setConnectionState({getState, setState}: StateContext<RemoteUsers>, {remoteUser, connectionState}: RemoteUsersAction.SetConnectionState): void {
-    const state: RemoteUsers = getState();
+    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
     state[remoteUser.id].roomConnection = connectionState;
 
     setState(state);

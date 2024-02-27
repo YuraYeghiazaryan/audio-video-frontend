@@ -126,11 +126,4 @@ export class ClassroomComponent implements OnInit, OnDestroy {
       this.remoteUsers = remoteUsers;
     });
   }
-
-  gexam(remoteUsers: RemoteUsers) {
-    return Object.values(remoteUsers)
-      .filter((remoteUser: RemoteUser): boolean => {
-        return remoteUser.roomConnection === RoomConnection.ONLINE;
-      });
-  }
 }
