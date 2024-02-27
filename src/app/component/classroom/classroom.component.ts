@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ZoomApiService} from "../../service/zoom-api.service";
 import {UserService} from "../../service/user.service";
 import {Router} from "@angular/router";
@@ -15,6 +15,7 @@ import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {WebSocketService} from "../../service/web-socket.service";
 import {MessageHandleService} from "../../service/message-handle.service";
 import {RoomConnection} from "../../model/user";
+import {RemoteUser} from "../../model/remote-user";
 
 @Component({
   selector: 'app-classroom',
@@ -27,7 +28,7 @@ import {RoomConnection} from "../../model/user";
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.css'
 })
-export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ClassroomComponent implements OnInit, OnDestroy {
   protected classroom: Classroom = ClassroomState.defaults;
   protected localUser: LocalUser = LocalUserState.defaults;
   protected remoteUsers: RemoteUsers = RemoteUsersState.defaults;
@@ -46,17 +47,11 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
     this.listenStoreChanges();
   }
 
-  /** logic, running during initialization classroom. if user is not logged in or classroom number doesn't exist, navigate to login page */
+  /** logic, running during initialization classroom.Connect to VCR and Zoom */
   public ngOnInit(): void {
+    /* if user is not logged in or classroom number doesn't exist, navigate to login page */
     if (!this.classroom.roomNumber || !this.userService.isLoggedIn()) {
       this.router.navigate([this.classroom.roomNumber, 'login']).then();
-    }
-  }
-
-
-  /** logic, running after classroom initialization.Connect to VCR and Zoom. */
-  public ngAfterViewInit(): void {
-    if (!this.classroom.roomNumber || !this.userService.isLoggedIn()) {
       return;
     }
 
@@ -88,7 +83,7 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
         this.httpClient.post<void>(
           `http://localhost:8090/classroom/${this.classroom?.roomNumber}/user-joined`,
           this.localUser
-        );
+        ).subscribe();
 
         /* listening for new user adding and remote user connection state changing */
         this.messageHandleServiceService.registerMessageHandlers(this.classroom.roomNumber);
@@ -132,5 +127,10 @@ export class ClassroomComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  protected readonly Object = Object;
+  gexam(remoteUsers: RemoteUsers) {
+    return Object.values(remoteUsers)
+      .filter((remoteUser: RemoteUser): boolean => {
+        return remoteUser.roomConnection === RoomConnection.ONLINE;
+      });
+  }
 }

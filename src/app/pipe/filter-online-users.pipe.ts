@@ -5,6 +5,7 @@ import {RoomConnection} from "../model/user";
 
 @Pipe({
   name: 'filterOnlineUsers',
+  pure: true,
   standalone: true
 })
 export class FilterOnlineUsersPipe implements PipeTransform {

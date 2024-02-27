@@ -9,9 +9,9 @@ export interface User {
 }
 
 export enum RoomConnection {
-  ONLINE,
-  OFFLINE,
-  PENDING
+  ONLINE = 'ONLINE',
+  OFFLINE = 'OFFLINE',
+  PENDING = 'PENDING'
 }
 
 export interface ZoomUser {

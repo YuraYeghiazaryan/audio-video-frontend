@@ -1,21 +1,21 @@
 <div *ngIf="localUser.zoomUser" id="my-self-view-video">
   {{ localUser.username }} {{ localUser.id }}
-  <canvas [id]="'u_' + localUser.zoomUser?.id" width="200" height="122"></canvas>
+  <canvas [id]="'u_' + localUser.zoomUser.id" width="200" height="122"></canvas>
 </div>
-<h1> {{ this.localUser?.username }} </h1>
+<h1> {{ this.localUser.username }} </h1>
 
 <button (click)="toggleVideo()" [disabled]="!joined">
-  {{ this.localUser?.zoomUser?.isVideoOn ? 'Off Video' : 'On Video' }}
+  {{ this.localUser.zoomUser?.isVideoOn ? 'Off Video' : 'On Video' }}
 </button>
 
 <button (click)="toggleAudio()" [disabled]="!joined">
-  {{ this.localUser?.zoomUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
+  {{ this.localUser.zoomUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
 </button>
 
 <div id="remote-users">
-  <div *ngFor="let remoteUser of this.remoteUsers | filterOnlineUsers">
+  <div style="border: black" *ngFor="let remoteUser of gexam(this.remoteUsers)">
     {{ remoteUser.username }} {{ remoteUser.id }}
 
-    <canvas [id]="'u_' + remoteUser.zoomUser?.id" width="200" height="122"></canvas>
+    <canvas [id]="'u_' + remoteUser.zoomUser.id" width="200" height="122"></canvas>
   </div>
 </div>

@@ -109,16 +109,6 @@ export class ZoomApiService {
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(false));
   }
 
-  public async unmuteLocalAudio(): Promise<void> {
-    if (!this.stream) {
-      return Promise.reject(`Trying to turn on local User audio. Stream is not found`);
-    }
-
-    await this.stream.unmuteAudio();
-
-    this.store.dispatch(new LocalUserAction.SetIsAudioOn(true));
-  }
-
   public async muteLocalAudio(): Promise<void> {
     if (!this.stream) {
       return Promise.reject(`Trying to turn off local User audio. Stream is not found`);
@@ -127,6 +117,16 @@ export class ZoomApiService {
     await this.stream.muteAudio();
 
     this.store.dispatch(new LocalUserAction.SetIsAudioOn(false));
+  }
+
+  public async unmuteLocalAudio(): Promise<void> {
+    if (!this.stream) {
+      return Promise.reject(`Trying to turn on local User audio. Stream is not found`);
+    }
+
+    await this.stream.unmuteAudio();
+
+    this.store.dispatch(new LocalUserAction.SetIsAudioOn(true));
   }
 
   public async muteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
@@ -192,6 +192,17 @@ export class ZoomApiService {
     this.stream.renderVideo(remoteUserVideo, userId, 200, 112, 0, 0, 3)
   }
 
+  /** render all remote users videos*/
+  private renderRemoteUsersVideo(): void {
+    Object.values(this.remoteUsers).forEach((remoteUser: RemoteUser): void => {
+      if (remoteUser.zoomUser.isVideoOn) {
+        this.renderUserVideo(remoteUser.zoomUser.id);
+      } else {
+        this.stopUserVideo(remoteUser.zoomUser.id);
+      }
+    });
+  }
+
   /** stop remote user video when user turn off video */
   private stopUserVideo(userId: ZoomUserId): void {
     if (!this.stream) {
@@ -236,21 +247,20 @@ export class ZoomApiService {
         return;
       }
 
-      const remoteUser: RemoteUser | undefined = Object.values(this.remoteUsers).find((remoteUser: RemoteUser): boolean => {
-        return remoteUser.zoomUser.id === participant.userId;
-      });
+      const remoteUser: RemoteUser | undefined = Object.values(this.remoteUsers)
+        .find((remoteUser: RemoteUser): boolean => {
+          return remoteUser.zoomUser.id === participant.userId;
+        });
 
       if (!remoteUser) {
-        throw Error();
+        throw Error(`${JSON.stringify(participant)} participant does not exist in remote users list`);
       }
 
-      // this.addRemoteUser(remoteUser);
       if (participant.bVideoOn) {
         this.renderUserVideo(participant.userId);
       }
     });
   }
-
   private listenStoreChanges(): void {
     this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
       this.classroom = classroom;
@@ -260,6 +270,7 @@ export class ZoomApiService {
     });
     this.store.select(RemoteUsersState).subscribe((remoteUsers: RemoteUsers): void => {
       this.remoteUsers = remoteUsers;
+      this.renderRemoteUsersVideo();
     });
   }
 }
