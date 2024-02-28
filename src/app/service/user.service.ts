@@ -5,7 +5,7 @@ import {Role} from "../model/user";
 import {lastValueFrom} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import {LocalUserAction, LocalUserState} from "../state/local-user.state";
-import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../state/remote-users.state";
+import {RemoteUsersAction} from "../state/remote-users.state";
 import {Store} from "@ngxs/store";
 import {ClassroomState} from "../state/classroom.state";
 import {Classroom} from "../model/classroom";
@@ -16,7 +16,6 @@ import {Classroom} from "../model/classroom";
 export class UserService {
   protected classroom: Classroom = ClassroomState.defaults;
   private localUser: LocalUser = LocalUserState.defaults;
-  private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
 
   public constructor(
     private httpClient: HttpClient,
@@ -86,10 +85,6 @@ export class UserService {
 
     this.store.select(LocalUserState).subscribe((localUser: LocalUser): void => {
       this.localUser = localUser;
-    });
-
-    this.store.select(RemoteUsersState).subscribe((remoteUsers: RemoteUsers): void => {
-      this.remoteUsers = remoteUsers;
     });
   }
 }

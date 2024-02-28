@@ -15,7 +15,6 @@ import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {WebSocketService} from "../../service/web-socket.service";
 import {MessageHandleService} from "../../service/message-handle.service";
 import {RoomConnection} from "../../model/user";
-import {RemoteUser} from "../../model/remote-user";
 
 @Component({
   selector: 'app-classroom',

@@ -261,6 +261,7 @@ export class ZoomApiService {
       }
     });
   }
+
   private listenStoreChanges(): void {
     this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
       this.classroom = classroom;
