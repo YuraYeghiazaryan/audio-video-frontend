@@ -63,6 +63,12 @@ export class GroupingService {
     }
   }
 
+  public async deleteAllGroups(): Promise<void> {
+    this.groups = {};
+
+    await this.updateAudioSubscriptions();
+  }
+
   public async addUserToGroup(groupId: GroupId, user: User): Promise<void> {
     const group: Group = this.groups[groupId];
     if (group) {

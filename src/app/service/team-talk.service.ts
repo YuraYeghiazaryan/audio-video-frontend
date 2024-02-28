@@ -10,21 +10,60 @@ import {GroupId, TeamId} from "../model/types";
 export class TeamTalkService {
   private teams: {[key: TeamId]: GroupId} = {};
 
+  private static nextId: TeamId = 0;
+
   constructor(
     private groupingService: GroupingService
   ) {}
 
-  public createTeam(users: User[]): void {}
+  public async createTeam(users: User[]): Promise<TeamId> {
+    const teamId: TeamId = TeamTalkService.nextId++;
+    const groupId: GroupId = this.groupingService.createGroup();
 
-  public addUserToTeam(teamId: TeamId, user: User): void {}
+    this.teams[teamId] = groupId;
+    await this.groupingService.addUsersToGroup(groupId, users);
 
-  public removeUserFromTeam(teamId: TeamId, user: User): void {}
+    return teamId;
+  }
 
-  public addUsersToTeam(teamId: TeamId, users: User[]): void {}
+  public async addUserToTeam(teamId: TeamId, user: User): Promise<void> {
+    const groupId: GroupId = this.teams[teamId];
+    if (groupId) {
+      await this.groupingService.addUserToGroup(groupId, user);
+    }
+  }
 
-  public remoteUsersFromTeam(teamId: TeamId, users: User[]): void {}
+  public async removeUserFromTeam(teamId: TeamId, user: User): Promise<void> {
+    const groupId: GroupId = this.teams[teamId];
+    if (groupId) {
+      await this.groupingService.removeUserFromGroup(groupId, user);
+    }
+  }
 
-  public deleteTeam(teamId: TeamId): void {}
+  public async addUsersToTeam(teamId: TeamId, users: User[]): Promise<void> {
+    const groupId: GroupId = this.teams[teamId];
+    if (groupId) {
+      await this.groupingService.addUsersToGroup(groupId, users);
+    }
+  }
 
-  public deleteAllTeams(): void {}
+  public async removeUsersFromTeam(teamId: TeamId, users: User[]): Promise<void> {
+    const groupId: GroupId = this.teams[teamId];
+    if (groupId) {
+      await this.groupingService.removeUsersFromGroup(groupId, users);
+    }
+  }
+
+  public async deleteTeam(teamId: TeamId): Promise<void> {
+    const groupId: GroupId = this.teams[teamId];
+    if (groupId) {
+      await this.groupingService.deleteGroup(groupId);
+      delete this.teams[teamId];
+    }
+  }
+
+  public async deleteAllTeams(): Promise<void> {
+    await this.groupingService.deleteAllGroups();
+    this.teams = {};
+  }
 }
