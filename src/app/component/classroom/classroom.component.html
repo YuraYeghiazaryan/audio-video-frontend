@@ -12,6 +12,10 @@
   {{ this.localUser.zoomUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
 </button>
 
+<button (click)="createTeams()">
+  Creations Teams demo
+</button>
+
 <div id="remote-users">
   <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | filterOnlineUsers)">
     {{ remoteUser.username }} {{ remoteUser.id }}

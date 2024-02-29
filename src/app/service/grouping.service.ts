@@ -6,6 +6,7 @@ import {RemoteUser} from "../model/remote-user";
 import {LocalUser} from "../model/local-user";
 import {LocalUserState} from "../state/local-user.state";
 import {Store} from "@ngxs/store";
+import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
 
 class Group {
   public readonly id: GroupId;
@@ -41,6 +42,7 @@ class Group {
 export class GroupingService {
   private groups: {[key: GroupId]: Group} = {};
   private localUser: LocalUser = LocalUserState.defaults;
+  private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
 
   constructor(
     private audioSubscriptionService: AudioSubscriptionService,
@@ -55,84 +57,72 @@ export class GroupingService {
     return group.id;
   }
 
-  public async deleteGroup(groupId: GroupId, updateSubscriptions: boolean = true): Promise<void> {
+  public deleteGroup(groupId: GroupId): void {
     const group: Group = this.groups[groupId];
     if (group) {
       delete this.groups[groupId];
-      updateSubscriptions && await this.updateAudioSubscriptions();
     }
   }
 
-  public async deleteAllGroups(): Promise<void> {
+  public deleteAllGroups(): void {
     this.groups = {};
-
-    await this.updateAudioSubscriptions();
   }
 
-  public async addUserToGroup(groupId: GroupId, user: User): Promise<void> {
+  public addUserToGroup(groupId: GroupId, user: User): void {
     const group: Group = this.groups[groupId];
     if (group) {
       group.addUser(user);
-      await this.updateAudioSubscriptions();
     }
   }
 
-  public async removeUserFromGroup(groupId: GroupId, user: User): Promise<void> {
+  public removeUserFromGroup(groupId: GroupId, user: User): void {
     const group: Group = this.groups[groupId];
     if (group) {
       group.removeUser(user);
-      await this.updateAudioSubscriptions();
     }
   }
 
-  public async addUsersToGroup(groupId: GroupId, users: User[], updateSubscriptions: boolean = true): Promise<void> {
+  public addUsersToGroup(groupId: GroupId, users: User[]): void {
     const group: Group = this.groups[groupId];
     if (group) {
       users.forEach((user: User): void => group.addUser(user));
-      updateSubscriptions && await this.updateAudioSubscriptions();
     }
   }
 
-  public async removeUsersFromGroup(groupId: GroupId, users: User[]): Promise<void> {
+  public removeUsersFromGroup(groupId: GroupId, users: User[]): void {
     const group: Group = this.groups[groupId];
     if (group) {
       users.forEach((user: User): void => group.removeUser(user));
-      await this.updateAudioSubscriptions();
     }
   }
 
-  public async moveUser(fromGroupId: GroupId, toGroupId: GroupId, user: User): Promise<void> {
+  public moveUser(fromGroupId: GroupId, toGroupId: GroupId, user: User): void {
     const fromGroup: Group = this.groups[fromGroupId];
     const toGroup: Group = this.groups[toGroupId];
 
     if (fromGroup && toGroup) {
       fromGroup.removeUser(user);
       toGroup.addUser(user);
-      await this.updateAudioSubscriptions();
     }
   }
 
-  public async mergeGroups(fromGroupId: GroupId, toGroupId: GroupId): Promise<void> {
+  public mergeGroups(fromGroupId: GroupId, toGroupId: GroupId): void {
     const toGroup: Group = this.groups[toGroupId];
     const fromGroup: Group = this.groups[fromGroupId];
 
     if (toGroup && fromGroup) {
       const usersToMove: User[] = fromGroup.getUsers();
-      await this.addUsersToGroup(toGroupId, usersToMove, false);
-      await this.deleteGroup(fromGroupId, false);
-      await this.updateAudioSubscriptions();
+      this.addUsersToGroup(toGroupId, usersToMove);
+      this.deleteGroup(fromGroupId);
     }
   }
 
-  /** call the method after each change in groups */
-  private async updateAudioSubscriptions(): Promise<void> {
+  /** unsubscribe from all remote users, then subscribe to local user group members */
+  public async updateAudioSubscriptions(): Promise<void> {
     /* users in the same group with local user */
     const localUserGroupMembers: User[] = [];
-    /* users in other groups */
-    const remoteUsers: User[] = [];
 
-    Object.values(this.groups).forEach((group: Group): void => {
-      /* check if local user is in current group */
+    for (const group of Object.values(this.groups)) {
       const localUserInCurrentGroup: User | undefined = group.findUser(this.localUser.id);
 
       if (localUserInCurrentGroup) {
@@ -141,21 +131,28 @@ export class GroupingService {
           /* remove local user from its group */
           ...group.getUsers().filter((user: User): boolean => user.id !== this.localUser.id)
         );
-      } else {
-        /* current group is not local user's group */
-        remoteUsers.push(...group.getUsers());
+        /* local user group is found*/
+        return;
       }
-    });
+    }
 
+    const unsubscriptionPromise: Promise<void> = this.audioSubscriptionService.unsubscribe(this.remoteUsers as RemoteUser[]);
     const subscriptionPromise: Promise<void> = this.audioSubscriptionService.subscribe(localUserGroupMembers as RemoteUser[]);
-    const unsubscriptionPromise: Promise<void> = this.audioSubscriptionService.unsubscribe(remoteUsers as RemoteUser[]);
 
     await Promise.all([subscriptionPromise, unsubscriptionPromise]);
+  }
+
+  public async subscribeToAll(): Promise<void> {
+    await this.audioSubscriptionService.subscribe(this.remoteUsers as RemoteUser[]);
   }
 
   private listenStoreChanges(): void {
     this.store.select(LocalUserState).subscribe((localUser: LocalUser): void => {
       this.localUser = localUser;
+    });
+
+    this.store.select(RemoteUsersState).subscribe((remoteUsers: RemoteUsers): void => {
+      this.remoteUsers = remoteUsers;
     });
   }
 }

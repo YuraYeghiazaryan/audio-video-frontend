@@ -125,4 +125,8 @@ export class ClassroomComponent implements OnInit, OnDestroy {
       this.remoteUsers = remoteUsers;
     });
   }
+
+  protected createTeams(): void {
+
+  }
 }

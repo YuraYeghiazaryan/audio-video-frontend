@@ -9,14 +9,14 @@ import {User} from "../model/user";
 export class PrivateTalkService {
   private privateTalks: {[key: PrivateTalkId]: GroupId} = {};
 
-  private static nextId: PrivateTalkId = 0;
-
   constructor(
     private groupingService: GroupingService
   ) {}
 
-  public async startPrivateTalk(user: User): Promise<PrivateTalkId> {
-    const privateTalkId: PrivateTalkId = PrivateTalkService.nextId;
+  public async startPrivateTalk(user: User, privateTalkId: PrivateTalkId): Promise<PrivateTalkId> {
+    if (this.privateTalks[privateTalkId]) {
+      return Promise.reject(`Private talk wit ${privateTalkId} id already exist`);
+    }
     const groupId: GroupId = this.groupingService.createGroup();
 
     this.privateTalks[privateTalkId] = groupId;
