@@ -5,7 +5,7 @@ import {RemoteUser} from "../model/remote-user";
 @Injectable({
   providedIn: 'root'
 })
-export class AudioSubscriptionService {
+export class AudioVideoService {
 
   constructor(
     private zoomApiService: ZoomApiService
