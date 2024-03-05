@@ -9,7 +9,7 @@ export interface Teams {
 
 export interface GameMode {
   isStarted: boolean;
-  isTeamTalkOn: boolean;
+  isTeamTalkStarted: boolean;
   teams: Teams;
 }
 
@@ -89,7 +89,7 @@ export class GameModeState {
   static readonly storeName: string = 'gameMode';
   static readonly defaults: GameMode = {
     isStarted: false,
-    isTeamTalkOn: false,
+    isTeamTalkStarted: false,
     teams: {}
   };
 
@@ -224,14 +224,14 @@ export class GameModeState {
   @Action(GameModeAction.StartTeamTalk)
   public startTeamTalk({patchState}: StateContext<GameMode>): void {
     patchState({
-      isTeamTalkOn: true
+      isTeamTalkStarted: true
     });
   }
 
   @Action(GameModeAction.EndTeamTalk)
   public endTeamTalk({patchState}: StateContext<GameMode>): void {
     patchState({
-      isTeamTalkOn: false
+      isTeamTalkStarted: false
     })
   }
 }
