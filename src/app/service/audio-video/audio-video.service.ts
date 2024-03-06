@@ -13,5 +13,5 @@ export abstract class AudioVideoService {
   public abstract muteLocalAudio(): Promise<void>;
   public abstract unmuteLocalAudio(): Promise<void>;
 
-  public abstract breakRoomIntoGroups(groups: {[key: number]: Group}): Promise<void>;
+  public abstract breakRoomIntoGroups(groups: Group[]): Promise<void>;
 }

@@ -12,8 +12,8 @@ import {GameMode, GameModeState} from "../state/game-mode.state";
 
 export interface Group {
   users: {[key: UserId]: User};
-  listenAudio: boolean;
-  seeVideo: boolean;
+  isAudioAvailableForLocalUser: boolean;
+  isVideoAvailableForLocalUser: boolean;
 }
 
 
@@ -34,12 +34,13 @@ export class GroupingService {
     this.listenStoreChanges();
   }
 
-  private updateGroups(): void {
+  private async updateGroups(): Promise<void> {
     /* @TODO */
     this.privateTalk.userIds;
     Object.values(this.gameMode.teams);
 
     const groups: Group[] = [];
+    await this.audioVideoService.breakRoomIntoGroups(groups);
   }
 
 
@@ -54,12 +55,12 @@ export class GroupingService {
 
     this.store.select(PrivateTalkState).subscribe((privateTalk: PrivateTalk): void => {
       this.privateTalk = privateTalk;
-      this.updateGroups();
+      this.updateGroups().then();
     });
 
     this.store.select(GameModeState).subscribe((gameMode: GameMode): void => {
       this.gameMode = gameMode;
-      this.updateGroups();
+      this.updateGroups().then();
     });
   }
 }

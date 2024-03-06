@@ -131,7 +131,7 @@ export class ZoomService extends AudioVideoService {
   }
 
 
-  public override breakRoomIntoGroups(groups: { [key: number]: Group }): Promise<void> {
+  public override breakRoomIntoGroups(groups: Group[]): Promise<void> {
     return Promise.resolve(undefined);
   }
 
