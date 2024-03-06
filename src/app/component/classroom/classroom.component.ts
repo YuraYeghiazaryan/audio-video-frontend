@@ -1,5 +1,4 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {ZoomApiService} from "../../service/zoom-api.service";
 import {UserService} from "../../service/user.service";
 import {Router} from "@angular/router";
 import {NgForOf, NgIf} from "@angular/common";
@@ -15,6 +14,7 @@ import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {WebSocketService} from "../../service/web-socket.service";
 import {MessageHandleService} from "../../service/message-handle.service";
 import {RoomConnection} from "../../model/user";
+import {AudioVideoService} from "../../service/audio-video/audio-video.service";
 
 @Component({
   selector: 'app-classroom',
@@ -36,7 +36,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
 
   constructor(
     protected userService: UserService,
-    private zoomApiServiceService: ZoomApiService,
+    private audioVideoService: AudioVideoService,
     private websocketService: WebSocketService,
     private messageHandleServiceService: MessageHandleService,
     private httpClient: HttpClient,
@@ -65,9 +65,9 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     });
 
     /* join to Zoom */
-    const zoomJoinPromise: Promise<void> = this.zoomApiServiceService.init()
+    const zoomJoinPromise: Promise<void> = this.audioVideoService.init()
       .then((): Promise<void> =>
-        this.zoomApiServiceService.join()
+        this.audioVideoService.join()
           .then((): void => {
             this.joined = true;
           })
@@ -93,22 +93,22 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   }
 
   public ngOnDestroy(): void {
-    this.zoomApiServiceService.leave();
+    this.audioVideoService.leave();
   }
 
   public toggleVideo(): void {
     if (this.localUser.zoomUser?.isVideoOn) {
-      this.zoomApiServiceService.stopLocalVideo().then()
+      this.audioVideoService.stopLocalVideo().then()
     } else {
-      this.zoomApiServiceService.startLocalVideo().then()
+      this.audioVideoService.startLocalVideo().then()
     }
   };
 
   public toggleAudio(): void {
     if (this.localUser.zoomUser?.isAudioOn) {
-      this.zoomApiServiceService.muteLocalAudio().then()
+      this.audioVideoService.muteLocalAudio().then()
     } else {
-      this.zoomApiServiceService.unmuteLocalAudio().then()
+      this.audioVideoService.unmuteLocalAudio().then()
     }
   };
 

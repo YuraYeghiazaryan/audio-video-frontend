@@ -1,24 +1,26 @@
 import {Injectable} from '@angular/core';
-import ZoomVideo, {ConnectionChangePayload, ConnectionState, Participant} from '@zoom/videosdk';
-import {ConnectionOptions} from "../model/connection-options";
-import {UserService} from "./user.service";
-import {Classroom} from "../model/classroom";
-import {LocalUser} from "../model/local-user";
+import {AudioVideoService} from "../audio-video.service";
+import {Classroom} from "../../../model/classroom";
+import {ClassroomState} from "../../../state/classroom.state";
+import {LocalUser} from "../../../model/local-user";
+import {LocalUserAction, LocalUserState} from "../../../state/local-user.state";
+import {RemoteUsers, RemoteUsersState} from "../../../state/remote-users.state";
+import {ConnectionOptions} from "../../../model/connection-options";
+import {UserService} from "../../user.service";
+import {ConnectionHandleService} from "../../connection-handle.service";
 import {HttpClient} from "@angular/common/http";
-import {lastValueFrom} from "rxjs";
-import {LocalUserAction, LocalUserState} from "../state/local-user.state";
-import {ClassroomState} from "../state/classroom.state";
 import {Store} from "@ngxs/store";
-import {ZoomUser} from "../model/user";
-import {ZoomUserId} from "../model/types";
-import {RemoteUser} from "../model/remote-user";
-import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
-import {ConnectionHandleService} from "./connection-handle.service";
+import ZoomVideo, {ConnectionChangePayload, ConnectionState, Participant} from "@zoom/videosdk";
+import {RemoteUser} from "../../../model/remote-user";
+import {lastValueFrom} from "rxjs";
+import {ZoomUserId} from "../../../model/types";
+import {ZoomUser} from "../../../model/user";
+import {Group} from "../../grouping.service";
 
 @Injectable({
   providedIn: 'root'
 })
-export class ZoomApiService {
+export class ZoomService extends AudioVideoService {
   private classroom : Classroom = ClassroomState.defaults;
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
@@ -35,11 +37,12 @@ export class ZoomApiService {
     private httpClient: HttpClient,
     private store: Store
   ) {
+    super();
     this.listenStoreChanges();
   }
 
   /** zoom client creation, getting jwt token, initialize client */
-  public init(): Promise<void> {
+  public override async init(): Promise<void> {
     this.client = ZoomVideo.createClient();
 
     const connectionOptionsPromise: Promise<void> = this.getConnectionOptions()
@@ -47,16 +50,16 @@ export class ZoomApiService {
         this.connectionOptions = connectionOptions;
       });
 
-    const initPromise: Promise<void> = this.client.init('en-US', 'Global', { patchJsMedia: true })
+    const initPromise: Promise<void> = this.client.init('en-US', 'Global', {patchJsMedia: true})
       .then((): void => {
         this.initialized = true;
       });
 
-    return Promise.all([connectionOptionsPromise, initPromise]).then();
+    await Promise.all([connectionOptionsPromise, initPromise]);
   }
 
   /** join client to zoom */
-  public join(): Promise<void> {
+  public override join(): Promise<void> {
     const videoSDKJWT: string | undefined = this.connectionOptions?.videoSDKJWT;
     const username: string | undefined = this.connectionOptions?.username;
     const sessionName: string | undefined = this.connectionOptions?.sessionName;
@@ -69,11 +72,11 @@ export class ZoomApiService {
 
     return this.client.join(sessionName, videoSDKJWT, username, sessionPasscode).then(this.onJoin.bind(this));
   }
-  public leave(): void {
+  public override leave(): void {
     this.client?.leave(true);
   }
 
-  public async startLocalVideo(): Promise<void> {
+  public override async startLocalVideo(): Promise<void> {
     if (!this.stream || !this.localUser.zoomUser) {
       return Promise.reject(`Can't turn on local User video`);
     }
@@ -98,8 +101,7 @@ export class ZoomApiService {
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(true));
   }
-
-  public async stopLocalVideo(): Promise<void> {
+  public override async stopLocalVideo(): Promise<void> {
     if (!this.stream) {
       return Promise.reject(`Trying to turn off local User video. Stream is not found`);
     }
@@ -109,7 +111,7 @@ export class ZoomApiService {
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(false));
   }
 
-  public async muteLocalAudio(): Promise<void> {
+  public override async muteLocalAudio(): Promise<void> {
     if (!this.stream) {
       return Promise.reject(`Trying to turn off local User audio. Stream is not found`);
     }
@@ -118,8 +120,7 @@ export class ZoomApiService {
 
     this.store.dispatch(new LocalUserAction.SetIsAudioOn(false));
   }
-
-  public async unmuteLocalAudio(): Promise<void> {
+  public override async unmuteLocalAudio(): Promise<void> {
     if (!this.stream) {
       return Promise.reject(`Trying to turn on local User audio. Stream is not found`);
     }
@@ -129,11 +130,17 @@ export class ZoomApiService {
     this.store.dispatch(new LocalUserAction.SetIsAudioOn(true));
   }
 
-  public async muteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
+
+  public override breakRoomIntoGroups(groups: { [key: number]: Group }): Promise<void> {
+    return Promise.resolve(undefined);
+  }
+
+
+  private async muteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
     await this.stream.muteUserAudioLocally(remoteUser.zoomUser.id);
   }
 
-  public async unmuteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
+  private async unmuteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
     await this.stream.unmuteUserAudioLocally(remoteUser.zoomUser.id);
   }
 

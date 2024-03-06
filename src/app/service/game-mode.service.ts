@@ -2,7 +2,6 @@ import {Injectable} from "@angular/core";
 import {GroupingService} from "./grouping.service";
 import {User} from "../model/user";
 import {GroupId, TeamId} from "../model/types";
-import {error} from "@angular/compiler-cli/src/transformers/util";
 
 
 @Injectable({
@@ -75,10 +74,8 @@ export class GameModeService {
   }
 
   public async startTeamTalk(): Promise<void> {
-    await this.groupingService.updateAudioSubscriptions();
   }
 
   public async endTeamTalk(): Promise<void> {
-    await this.groupingService.subscribeToAll();
   }
 }

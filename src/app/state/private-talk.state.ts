@@ -1,7 +1,6 @@
 import {Action, State, StateContext} from "@ngxs/store";
 import {Injectable} from "@angular/core";
-import {TeamId, UserId} from "../model/types";
-import {Team} from "../model/team";
+import {UserId} from "../model/types";
 
 export interface PrivateTalk {
   isStarted: boolean;
