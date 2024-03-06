@@ -17,9 +17,30 @@
 </button>
 
 <div id="remote-users">
-  <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | filterOnlineUsers)">
-    {{ remoteUser.username }} {{ remoteUser.id }}
 
-    <canvas [id]="'u_' + remoteUser.zoomUser.id" width="200" height="122"></canvas>
-  </div>
+  <ng-container *ngIf="gameMode?.isStarted; then inGameMode else notInGameMode"></ng-container>
+  <ng-template #inGameMode>
+    <div *ngFor="let team of gameMode.teams | values">
+
+      <ng-container *ngFor="let userId of team.userIds">
+
+        <div style="border: black" *ngIf="remoteUsers[userId].isVideoVisible">
+          {{ remoteUsers[userId].username }} {{ userId }} {{ team.color }} {{ team.name }}
+
+          <canvas [id]="'u_' + remoteUsers[userId].zoomUser.id" width="200" height="122"></canvas>
+        </div>
+
+      </ng-container>
+
+    </div>
+  </ng-template>
+
+  <ng-template #notInGameMode>
+    <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | filterOnlineUsers)">
+      {{ remoteUser.username }} {{ remoteUser.id }}
+
+      <canvas [id]="'u_' + remoteUser.zoomUser.id" width="200" height="122"></canvas>
+    </div>
+  </ng-template>
+
 </div>

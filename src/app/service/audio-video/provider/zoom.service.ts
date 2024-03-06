@@ -4,7 +4,7 @@ import {Classroom} from "../../../model/classroom";
 import {ClassroomState} from "../../../state/classroom.state";
 import {LocalUser} from "../../../model/local-user";
 import {LocalUserAction, LocalUserState} from "../../../state/local-user.state";
-import {RemoteUsers, RemoteUsersState} from "../../../state/remote-users.state";
+import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../../../state/remote-users.state";
 import {ConnectionOptions} from "../../../model/connection-options";
 import {UserService} from "../../user.service";
 import {ConnectionHandleService} from "../../connection-handle.service";
@@ -13,9 +13,11 @@ import {Store} from "@ngxs/store";
 import ZoomVideo, {ConnectionChangePayload, ConnectionState, Participant} from "@zoom/videosdk";
 import {RemoteUser} from "../../../model/remote-user";
 import {lastValueFrom} from "rxjs";
-import {ZoomUserId} from "../../../model/types";
+import {UserId, ZoomUserId} from "../../../model/types";
 import {ZoomUser} from "../../../model/user";
 import {Group} from "../../grouping.service";
+import SetAudioListenable = RemoteUsersAction.SetAudioListenable;
+import SetVideoVisible = RemoteUsersAction.SetVideoVisible;
 
 @Injectable({
   providedIn: 'root'
@@ -131,10 +133,32 @@ export class ZoomService extends AudioVideoService {
   }
 
 
-  public override breakRoomIntoGroups(groups: Group[]): Promise<void> {
-    return Promise.resolve(undefined);
-  }
+  public override async breakRoomIntoGroups(groups: Group[]): Promise<void> {
+    const promises: Promise<void>[] = [];
 
+    groups.forEach((group: Group): void => {
+      group.userIds.forEach((userId: UserId): void => {
+
+        if (userId === this.localUser.id) {
+          return;
+        }
+
+        const remoteUser: RemoteUser = this.remoteUsers[userId];
+
+        this.store.dispatch(new SetAudioListenable(remoteUser, group.isAudioAvailableForLocalUser));
+        this.store.dispatch(new SetVideoVisible(remoteUser, group.isVideoAvailableForLocalUser));
+
+        if (group.isAudioAvailableForLocalUser) {
+          promises.push(this.unmuteUserAudioLocally(remoteUser));
+        } else {
+          promises.push(this.muteUserAudioLocally(remoteUser));
+        }
+
+      });
+    });
+
+    await Promise.all(promises);
+  }
 
   private async muteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
     await this.stream.muteUserAudioLocally(remoteUser.zoomUser.id);

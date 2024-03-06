@@ -35,7 +35,5 @@ export class ChimeService extends AudioVideoService {
     return Promise.resolve(undefined);
   }
 
-  public override async breakRoomIntoGroups(groups: Group[]): Promise<void> {
-    return Promise.resolve(undefined);
-  }
+  public override async breakRoomIntoGroups(groups: Group[]): Promise<void> {}
 }

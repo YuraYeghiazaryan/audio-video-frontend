@@ -23,6 +23,16 @@ export namespace RemoteUsersAction {
     static readonly type: string = '[remote-users] set remote user connection state';
     constructor(public remoteUser: RemoteUser, public connectionState: RoomConnection) {}
   }
+
+  export class SetAudioListenable {
+    static readonly type: string = '[remote-users] set remote user audio listenable';
+    constructor(public remoteUser: RemoteUser, public isAudioListenable: boolean) {}
+  }
+
+  export class SetVideoVisible {
+    static readonly type: string = '[remote-users] set remote user video visibility';
+    constructor(public remoteUser: RemoteUser, public isVideoVisible: boolean) {}
+  }
 }
 
 @State<RemoteUsers>({
@@ -35,7 +45,7 @@ export class RemoteUsersState {
   static readonly defaults: RemoteUsers = {};
 
   @Action(RemoteUsersAction.AddRemoteUser)
-  addRemoteUser({getState, setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.AddRemoteUser): void {
+  public addRemoteUser({getState, setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.AddRemoteUser): void {
     const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
     state[remoteUser.id] = remoteUser;
 
@@ -43,7 +53,7 @@ export class RemoteUsersState {
   }
 
   @Action(RemoteUsersAction.RemoveRemoteUser)
-  removeRemoteUser({getState, setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.RemoveRemoteUser): void {
+  public removeRemoteUser({getState, setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.RemoveRemoteUser): void {
     const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
     delete state[remoteUser.id];
 
@@ -51,9 +61,25 @@ export class RemoteUsersState {
   }
 
   @Action(RemoteUsersAction.SetConnectionState)
-  setConnectionState({getState, setState}: StateContext<RemoteUsers>, {remoteUser, connectionState}: RemoteUsersAction.SetConnectionState): void {
+  public setConnectionState({getState, setState}: StateContext<RemoteUsers>, {remoteUser, connectionState}: RemoteUsersAction.SetConnectionState): void {
     const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
     state[remoteUser.id].roomConnection = connectionState;
+
+    setState(state);
+  }
+
+  @Action(RemoteUsersAction.SetAudioListenable)
+  public setAudioListenable({getState, setState}: StateContext<RemoteUsers>, {remoteUser, isAudioListenable}: RemoteUsersAction.SetAudioListenable): void {
+    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
+    state[remoteUser.id].isAudioListenable = isAudioListenable;
+
+    setState(state);
+  }
+
+  @Action(RemoteUsersAction.SetVideoVisible)
+  public setVideoVisible({getState, setState}: StateContext<RemoteUsers>, {remoteUser, isVideoVisible}: RemoteUsersAction.SetVideoVisible): void {
+    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
+    state[remoteUser.id].isVideoVisible = isVideoVisible;
 
     setState(state);
   }

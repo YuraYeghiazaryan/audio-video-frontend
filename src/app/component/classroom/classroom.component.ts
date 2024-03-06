@@ -15,6 +15,8 @@ import {WebSocketService} from "../../service/web-socket.service";
 import {MessageHandleService} from "../../service/message-handle.service";
 import {RoomConnection} from "../../model/user";
 import {AudioVideoService} from "../../service/audio-video/audio-video.service";
+import {GameMode, GameModeState} from "../../state/game-mode.state";
+import {ValuesPipe} from "../../pipe/values.pipe";
 
 @Component({
   selector: 'app-classroom',
@@ -22,7 +24,8 @@ import {AudioVideoService} from "../../service/audio-video/audio-video.service";
   imports: [
     NgForOf,
     FilterOnlineUsersPipe,
-    NgIf
+    NgIf,
+    ValuesPipe
   ],
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.css'
@@ -31,6 +34,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   protected classroom: Classroom = ClassroomState.defaults;
   protected localUser: LocalUser = LocalUserState.defaults;
   protected remoteUsers: RemoteUsers = RemoteUsersState.defaults;
+  protected gameMode: GameMode = GameModeState.defaults;
 
   protected joined: boolean = false;
 
@@ -123,6 +127,10 @@ export class ClassroomComponent implements OnInit, OnDestroy {
 
     this.store.select(RemoteUsersState).subscribe((remoteUsers: RemoteUsers): void => {
       this.remoteUsers = remoteUsers;
+    });
+
+    this.store.select(GameModeState).subscribe((gameMode: GameMode): void => {
+      this.gameMode = gameMode;
     });
   }
 
