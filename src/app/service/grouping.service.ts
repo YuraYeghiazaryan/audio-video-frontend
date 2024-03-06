@@ -11,7 +11,7 @@ import {GameMode, GameModeState} from "../state/game-mode.state";
 
 
 export interface Group {
-  users: {[key: UserId]: User};
+  userIds: Set<UserId>;
   isAudioAvailableForLocalUser: boolean;
   isVideoAvailableForLocalUser: boolean;
 }
