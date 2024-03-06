@@ -1,81 +1,55 @@
 import {Injectable} from "@angular/core";
-import {GroupingService} from "./grouping.service";
 import {User} from "../model/user";
-import {GroupId, TeamId} from "../model/types";
+import {TeamId} from "../model/types";
+import {GameModeAction} from "../state/game-mode.state";
+import {Store} from "@ngxs/store";
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameModeService {
-  private groups: {
-    [key: GroupId]: {
-      users: User[],
-      localUserListen: boolean,
-      localUserSee: boolean
-    }
-  } = {};
 
   constructor(
-    private groupingService: GroupingService
+    private store: Store
   ) {}
 
-  public createTeam(users: User[], teamId: TeamId): void {
-    // if (this.teams[teamId]) {
-    //   return error(`Team with ${teamId} is already exist`);
-    // }
-    // const groupId: GroupId = this.groupingService.createGroup();
-    //
-    // this.teams[teamId] = groupId;
-    // this.groupingService.addUsersToGroup(groupId, users);
-    //
-    // return teamId;
+  public createTeam(users: User[], teamId: TeamId, name: string, color: string): void {
+    this.store.dispatch(new GameModeAction.Create(teamId, name, color));
+    this.addUsersToTeam(teamId, users);
   }
 
   public addUserToTeam(teamId: TeamId, user: User): void {
-    // const groupId: GroupId = this.teams[teamId];
-    // if (groupId) {
-    //   this.groupingService.addUserToGroup(groupId, user);
-    // }
+    this.store.dispatch(new GameModeAction.AddUserToTeam(teamId, user.id));
   }
 
   public removeUserFromTeam(teamId: TeamId, user: User): void {
-    // const groupId: GroupId = this.teams[teamId];
-    // if (groupId) {
-    //   this.groupingService.removeUserFromGroup(groupId, user);
-    // }
+    this.store.dispatch(new GameModeAction.RemoveUserFromTeam(teamId, user.id));
   }
 
   public addUsersToTeam(teamId: TeamId, users: User[]): void {
-    // const groupId: GroupId = this.teams[teamId];
-    // if (groupId) {
-    //   this.groupingService.addUsersToGroup(groupId, users);
-    // }
+    const userIds = users.map(user => user.id);
+    this.store.dispatch(new GameModeAction.AddUsersToTeam(teamId, userIds));
   }
 
   public removeUsersFromTeam(teamId: TeamId, users: User[]): void {
-    // const groupId: GroupId = this.teams[teamId];
-    // if (groupId) {
-    //   this.groupingService.removeUsersFromGroup(groupId, users);
-    // }
+    const userIds = users.map(user => user.id);
+    this.store.dispatch(new GameModeAction.RemoveUsersFromTeam(teamId, userIds));
   }
 
   public deleteTeam(teamId: TeamId): void {
-    // const groupId: GroupId = this.teams[teamId];
-    // if (groupId) {
-    //   this.groupingService.deleteGroup(groupId);
-    //   delete this.teams[teamId];
-    // }
+    this.store.dispatch(new GameModeAction.Delete(teamId));
   }
 
   public deleteAllTeams(): void {
-    // this.groupingService.deleteAllGroups();
-    // this.teams = {};
+    this.store.dispatch(new GameModeAction.DeleteAll());
   }
 
   public async startTeamTalk(): Promise<void> {
+    this.store.dispatch(new GameModeAction.StartTeamTalk());
   }
 
   public async endTeamTalk(): Promise<void> {
+    this.store.dispatch(new GameModeAction.EndTeamTalk());
   }
 }

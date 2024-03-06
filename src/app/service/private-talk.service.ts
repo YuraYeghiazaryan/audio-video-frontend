@@ -1,54 +1,30 @@
 import {Injectable} from "@angular/core";
-import {GroupingService} from "./grouping.service";
-import {GroupId, PrivateTalkId} from "../model/types";
 import {User} from "../model/user";
+import {PrivateTalkAction} from "../state/private-talk.state";
+import {Store} from "@ngxs/store";
 
 @Injectable({
   providedIn: 'root'
 })
 export class PrivateTalkService {
-  private privateTalks: {[key: PrivateTalkId]: GroupId} = {};
 
   constructor(
-    private groupingService: GroupingService
+    private store: Store
   ) {}
 
-  public async startPrivateTalk(user: User, privateTalkId: PrivateTalkId): Promise<PrivateTalkId> {
-    if (this.privateTalks[privateTalkId]) {
-      return Promise.reject(`Private talk wit ${privateTalkId} id already exist`);
-    }
-    const groupId: GroupId = this.groupingService.createGroup();
-
-    this.privateTalks[privateTalkId] = groupId;
-    await this.groupingService.addUserToGroup(groupId, user);
-
-    return privateTalkId;
+  public startPrivateTalk(): void {
+    this.store.dispatch(new PrivateTalkAction.StartPrivateTalk());
   }
 
-  public async joinPrivateTalk(privateTalkId: PrivateTalkId, user: User): Promise<void> {
-    const groupId: GroupId = this.privateTalks[privateTalkId];
-    if (groupId) {
-      await this.groupingService.addUserToGroup(groupId, user);
-    }
+  public endPrivateTalk(): void {
+    this.store.dispatch(new PrivateTalkAction.EndPrivateTalk());
   }
 
-  public async leavePrivateTalk(privateTalkId: PrivateTalkId, user: User): Promise<void> {
-    const groupId: GroupId = this.privateTalks[privateTalkId];
-    if (groupId) {
-      await this.groupingService.removeUserFromGroup(groupId, user);
-    }
+  public addUserToPrivateTalk(user: User): void {
+    this.store.dispatch(new PrivateTalkAction.AddUser(user.id));
   }
 
-  public async endPrivateTalk(privateTalkId: PrivateTalkId): Promise<void> {
-    const groupId: GroupId = this.privateTalks[privateTalkId];
-    if (groupId) {
-      await this.groupingService.deleteGroup(groupId);
-      delete this.privateTalks[privateTalkId];
-    }
-  }
-
-  public async endAllPrivateTalks(): Promise<void> {
-    await this.groupingService.deleteAllGroups();
-    this.privateTalks = {};
+  public removeUserFromPrivateTalk(user: User): void {
+    this.store.dispatch(new PrivateTalkAction.RemoveUser(user.id));
   }
 }

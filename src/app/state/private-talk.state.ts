@@ -18,6 +18,16 @@ export namespace PrivateTalkAction {
     static readonly type: string = '[private-talk] end Private talk';
     constructor() {}
   }
+
+  export class AddUser {
+    static readonly type: string = '[private-talk] add user to Private talk';
+    constructor(public userId: UserId) {}
+  }
+
+  export class RemoveUser {
+    static readonly type: string = '[private-talk] remove user from Private talk';
+    constructor(public userId: UserId) {}
+  }
 }
 
 @State<PrivateTalk>({
@@ -33,16 +43,36 @@ export class PrivateTalkState {
   };
 
   @Action(PrivateTalkAction.StartPrivateTalk)
-  public startTeamTalk({patchState}: StateContext<PrivateTalk>): void {
+  public startPrivateTalk({patchState}: StateContext<PrivateTalk>): void {
     patchState({
       isStarted: true
     });
   }
 
   @Action(PrivateTalkAction.EndPrivateTalk)
-  public endTeamTalk({patchState}: StateContext<PrivateTalk>): void {
+  public endPrivateTalk({patchState}: StateContext<PrivateTalk>): void {
     patchState({
       isStarted: false
     })
+  }
+
+  @Action(PrivateTalkAction.AddUser)
+  public addUser({getState, patchState}: StateContext<PrivateTalk>, {userId}: PrivateTalkAction.AddUser): void {
+    const state: PrivateTalk = getState();
+    state.userIds.add(userId);
+
+    patchState({
+      userIds: new Set([...state.userIds])
+    });
+  }
+
+  @Action(PrivateTalkAction.RemoveUser)
+  public removeUser({ getState, patchState }: StateContext<PrivateTalk>, { userId }: PrivateTalkAction.RemoveUser): void {
+    const state: PrivateTalk = getState();
+    state.userIds.delete(userId);
+
+    patchState({
+      userIds: new Set([...state.userIds])
+    });
   }
 }
