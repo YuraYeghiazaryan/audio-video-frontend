@@ -1,5 +1,5 @@
 import {Injectable} from "@angular/core";
-import {User} from "../model/user";
+import {Role} from "../model/user";
 import {UserId} from "../model/types";
 import {AudioVideoService} from "./audio-video/audio-video.service";
 import {LocalUser} from "../model/local-user";
@@ -8,6 +8,7 @@ import {Store} from "@ngxs/store";
 import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
 import {PrivateTalk, PrivateTalkState} from "../state/private-talk.state";
 import {GameMode, GameModeState} from "../state/game-mode.state";
+import {Team} from "../model/team";
 
 
 export interface Group {
@@ -37,12 +38,92 @@ export class GroupingService {
   private async updateGroups(): Promise<void> {
     /* @TODO */
     this.privateTalk.userIds;
-    Object.values(this.gameMode.teams);
+
 
     const groups: Group[] = [];
+    /* should be users set, which are not in any group */
+    let freeUserIds: Set<UserId> = new Set<UserId>(
+      Object.keys(this.remoteUsers).map(parseInt)
+    ).add(this.localUser.id);
+
+    const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
+
+    if (this.gameMode.isTeamTalkStarted) {
+      const gameModeGroups: Group[] = Object.values(this.gameMode.teams).map((team: Team): Group => {
+        this.subtractSets(freeUserIds, team.userIds);
+
+        const isLocalUserInCurrentTeam: boolean = team.userIds.has(this.localUser.id);
+        let isAudioAvailableForLocalUser: boolean = false;
+        let isVideoAvailableForLocalUser: boolean = false;
+
+        if (this.localUser.role === Role.STUDENT) {
+          isAudioAvailableForLocalUser = isLocalUserInCurrentTeam;
+          isVideoAvailableForLocalUser = isLocalUserInCurrentTeam;
+        } else if (this.localUser.role === Role.TEACHER) {
+          isAudioAvailableForLocalUser = isLocalUserInAnyTeam ? isLocalUserInCurrentTeam : true;
+          isVideoAvailableForLocalUser = true;
+        } else {
+          throw Error();
+        }
+
+        return  {
+          userIds: team.userIds,
+          isAudioAvailableForLocalUser,
+          isVideoAvailableForLocalUser
+        };
+      });
+
+      groups.push(...gameModeGroups);
+    }
+
+    let isAudioAvailableForLocalUser: boolean = false;
+    let isVideoAvailableForLocalUser: boolean = false;
+
+    if (this.localUser.role === Role.STUDENT) {
+      isAudioAvailableForLocalUser = !isLocalUserInAnyTeam;
+      isVideoAvailableForLocalUser = !isLocalUserInAnyTeam;
+    } else if (this.localUser.role === Role.TEACHER) {
+      isAudioAvailableForLocalUser = !isLocalUserInAnyTeam;
+      isVideoAvailableForLocalUser = true;
+    } else {
+      throw Error();
+    }
+
+    const freeUsersGroup: Group = {
+      userIds: freeUserIds,
+      isAudioAvailableForLocalUser,
+      isVideoAvailableForLocalUser
+    };
+    groups.push(freeUsersGroup);
+
+    if (this.privateTalk.isStarted) {
+      groups.forEach((group: Group): void => {
+        group.isAudioAvailableForLocalUser = false;
+      });
+
+      const privateTalkGroup: Group = {
+        userIds: this.privateTalk.userIds,
+        isAudioAvailableForLocalUser: true,
+        isVideoAvailableForLocalUser: false
+      };
+
+      groups.push(privateTalkGroup);
+    }
+
     await this.audioVideoService.breakRoomIntoGroups(groups);
   }
 
+  private isLocalUserInAnyTeam(): boolean {
+    return !!Object.values(this.gameMode.teams).filter((team: Team): boolean => {
+      return team.userIds.has(this.localUser.id);
+    }).length;
+  }
+
+  private subtractSets<Type>(A: Set<Type>, B: Set<Type>): void {
+    B.forEach((value: Type): void => {
+      A.delete(value);
+    });
+  }
 
   private listenStoreChanges(): void {
     this.store.select(LocalUserState).subscribe((localUser: LocalUser): void => {
