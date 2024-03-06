@@ -36,46 +36,53 @@ export class GroupingService {
   }
 
   private async updateGroups(): Promise<void> {
-    /* @TODO */
-    this.privateTalk.userIds;
-
-
     const groups: Group[] = [];
     /* should be users set, which are not in any group */
-    let freeUserIds: Set<UserId> = new Set<UserId>(
-      Object.keys(this.remoteUsers).map(parseInt)
-    ).add(this.localUser.id);
-
+    const freeUserIds: Set<UserId> = new Set<UserId>(Object.keys(this.remoteUsers).map(parseInt)).add(this.localUser.id);
     const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
 
     if (this.gameMode.isTeamTalkStarted) {
-      const gameModeGroups: Group[] = Object.values(this.gameMode.teams).map((team: Team): Group => {
-        this.subtractSets(freeUserIds, team.userIds);
-
-        const isLocalUserInCurrentTeam: boolean = team.userIds.has(this.localUser.id);
-        let isAudioAvailableForLocalUser: boolean = false;
-        let isVideoAvailableForLocalUser: boolean = false;
-
-        if (this.localUser.role === Role.STUDENT) {
-          isAudioAvailableForLocalUser = isLocalUserInCurrentTeam;
-          isVideoAvailableForLocalUser = isLocalUserInCurrentTeam;
-        } else if (this.localUser.role === Role.TEACHER) {
-          isAudioAvailableForLocalUser = isLocalUserInAnyTeam ? isLocalUserInCurrentTeam : true;
-          isVideoAvailableForLocalUser = true;
-        } else {
-          throw Error();
-        }
-
-        return  {
-          userIds: team.userIds,
-          isAudioAvailableForLocalUser,
-          isVideoAvailableForLocalUser
-        };
-      });
-
-      groups.push(...gameModeGroups);
+      this.updateGroupsForTeamTalk(groups, freeUserIds, isLocalUserInAnyTeam);
     }
 
+    this.updateGroupsForFreeUsers(groups, freeUserIds, isLocalUserInAnyTeam);
+
+    if (this.privateTalk.isStarted) {
+      this.updateGroupsForPrivateTalk(groups);
+    }
+
+    await this.audioVideoService.breakRoomIntoGroups(groups);
+  }
+
+  private updateGroupsForTeamTalk(groups: Group[], freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
+    const gameModeGroups: Group[] = Object.values(this.gameMode.teams).map((team: Team): Group => {
+      this.subtractSets(freeUserIds, team.userIds);
+
+      const isLocalUserInCurrentTeam: boolean = team.userIds.has(this.localUser.id);
+      let isAudioAvailableForLocalUser: boolean = false;
+      let isVideoAvailableForLocalUser: boolean = false;
+
+      if (this.localUser.role === Role.STUDENT) {
+        isAudioAvailableForLocalUser = isLocalUserInCurrentTeam;
+        isVideoAvailableForLocalUser = isLocalUserInCurrentTeam;
+      } else if (this.localUser.role === Role.TEACHER) {
+        isAudioAvailableForLocalUser = isLocalUserInAnyTeam ? isLocalUserInCurrentTeam : true;
+        isVideoAvailableForLocalUser = true;
+      } else {
+        throw Error();
+      }
+
+      return  {
+        userIds: team.userIds,
+        isAudioAvailableForLocalUser,
+        isVideoAvailableForLocalUser
+      };
+    });
+
+    groups.push(...gameModeGroups);
+  }
+
+  private updateGroupsForFreeUsers(groups: Group[], freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
     let isAudioAvailableForLocalUser: boolean = false;
     let isVideoAvailableForLocalUser: boolean = false;
 
@@ -95,22 +102,20 @@ export class GroupingService {
       isVideoAvailableForLocalUser
     };
     groups.push(freeUsersGroup);
+  }
 
-    if (this.privateTalk.isStarted) {
-      groups.forEach((group: Group): void => {
-        group.isAudioAvailableForLocalUser = false;
-      });
+  private updateGroupsForPrivateTalk(groups: Group[]): void {
+    groups.forEach((group: Group): void => {
+      group.isAudioAvailableForLocalUser = false;
+    });
 
-      const privateTalkGroup: Group = {
-        userIds: this.privateTalk.userIds,
-        isAudioAvailableForLocalUser: true,
-        isVideoAvailableForLocalUser: false
-      };
+    const privateTalkGroup: Group = {
+      userIds: this.privateTalk.userIds,
+      isAudioAvailableForLocalUser: true,
+      isVideoAvailableForLocalUser: false
+    };
 
-      groups.push(privateTalkGroup);
-    }
-
-    await this.audioVideoService.breakRoomIntoGroups(groups);
+    groups.push(privateTalkGroup);
   }
 
   private isLocalUserInAnyTeam(): boolean {
