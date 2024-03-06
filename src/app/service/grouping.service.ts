@@ -37,7 +37,7 @@ export class GroupingService {
 
   private async updateGroups(): Promise<void> {
     const groups: Group[] = [];
-    /* should be users set, which are not in any group */
+    /* should be users set, which are not in any Team */
     const freeUserIds: Set<UserId> = new Set<UserId>(Object.keys(this.remoteUsers).map(parseInt)).add(this.localUser.id);
     const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
 
@@ -54,17 +54,21 @@ export class GroupingService {
     await this.audioVideoService.breakRoomIntoGroups(groups);
   }
 
+  /** update groups for students who are in Teams */
   private updateGroupsForTeamTalk(groups: Group[], freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
     const gameModeGroups: Group[] = Object.values(this.gameMode.teams).map((team: Team): Group => {
+      /* remove from the freeUsers group those users who are already in other Teams */
       this.subtractSets(freeUserIds, team.userIds);
 
       const isLocalUserInCurrentTeam: boolean = team.userIds.has(this.localUser.id);
       let isAudioAvailableForLocalUser: boolean = false;
       let isVideoAvailableForLocalUser: boolean = false;
 
+      /* student should only listen the audio and see the video of the Team if the student is in that Team */
       if (this.localUser.role === Role.STUDENT) {
         isAudioAvailableForLocalUser = isLocalUserInCurrentTeam;
         isVideoAvailableForLocalUser = isLocalUserInCurrentTeam;
+        /* if Teacher in any Team, it should see the videos of all Teams and listen the audio only it's Team */
       } else if (this.localUser.role === Role.TEACHER) {
         isAudioAvailableForLocalUser = isLocalUserInAnyTeam ? isLocalUserInCurrentTeam : true;
         isVideoAvailableForLocalUser = true;
@@ -82,13 +86,16 @@ export class GroupingService {
     groups.push(...gameModeGroups);
   }
 
+  /** update groups for students who are not in any Team */
   private updateGroupsForFreeUsers(groups: Group[], freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
     let isAudioAvailableForLocalUser: boolean = false;
     let isVideoAvailableForLocalUser: boolean = false;
 
+    /* free student should only listen the audio and see the video of all free users */
     if (this.localUser.role === Role.STUDENT) {
       isAudioAvailableForLocalUser = !isLocalUserInAnyTeam;
       isVideoAvailableForLocalUser = !isLocalUserInAnyTeam;
+      /* if Teacher is not in any team, it should see the videos and listen the audios of all Teams */
     } else if (this.localUser.role === Role.TEACHER) {
       isAudioAvailableForLocalUser = !isLocalUserInAnyTeam;
       isVideoAvailableForLocalUser = true;
@@ -104,7 +111,9 @@ export class GroupingService {
     groups.push(freeUsersGroup);
   }
 
+  /** update groups for students who are in Private Talk */
   private updateGroupsForPrivateTalk(groups: Group[]): void {
+    /* no one listens to anyone during the Private Talk,except those in the Private Talk */
     groups.forEach((group: Group): void => {
       group.isAudioAvailableForLocalUser = false;
     });
