@@ -6,6 +6,7 @@ import {Store} from "@ngxs/store";
 import {LocalUserState} from "../../state/local-user.state";
 import {LocalUser} from "../../model/local-user";
 import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../../state/remote-users.state";
+import {UserId} from "../../model/types";
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +18,9 @@ export class UserEventHandleService {
   constructor(
     private userService: UserService,
     private store: Store
-  ) {}
+  ) {
+    this.listenStoreChanges();
+  }
 
   public onUserConnected(user: User): void {
     if (user.id === this.localUser?.id) {
@@ -26,6 +29,8 @@ export class UserEventHandleService {
 
     if (user.zoomUser) {
       const remoteUser: RemoteUser = user as RemoteUser;
+      remoteUser.isAudioListenable = true;
+      remoteUser.isVideoVisible = true;
 
       /* the state of remoteUsers will be changed and zoomApiService will render their videos or not(depending video state)*/
       this.userService.addRemoteUser(remoteUser);
@@ -43,6 +48,13 @@ export class UserEventHandleService {
     }
 
     this.store.dispatch(new RemoteUsersAction.SetConnectionState(remoteUser, connectionState));
+  }
+
+  public onUserVideoStateChanged(userId: UserId, isOn: boolean): void {
+    const remoteUser: RemoteUser | undefined = this.remoteUsers[userId];
+    if (remoteUser) {
+      this.store.dispatch(new RemoteUsersAction.SetVideoState(remoteUser, isOn));
+    }
   }
 
   private listenStoreChanges(): void {

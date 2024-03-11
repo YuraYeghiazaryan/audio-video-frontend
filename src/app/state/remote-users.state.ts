@@ -3,6 +3,7 @@ import {Injectable} from '@angular/core';
 import {RemoteUser} from "../model/remote-user";
 import {UserId} from "../model/types";
 import {RoomConnection} from "../model/user";
+import produce from "immer";
 
 export interface RemoteUsers {
   [key: UserId]: RemoteUser;
@@ -33,6 +34,16 @@ export namespace RemoteUsersAction {
     static readonly type: string = '[remote-users] set remote user video visibility';
     constructor(public remoteUser: RemoteUser, public isVideoVisible: boolean) {}
   }
+
+  export class SetAudioState {
+    static readonly type: string = '[remote-users] set remote user audio state';
+    constructor(public remoteUser: RemoteUser, public isOn: boolean) {}
+  }
+
+  export class SetVideoState {
+    static readonly type: string = '[remote-users] set remote user video state';
+    constructor(public remoteUser: RemoteUser, public isOn: boolean) {}
+  }
 }
 
 @State<RemoteUsers>({
@@ -45,43 +56,66 @@ export class RemoteUsersState {
   static readonly defaults: RemoteUsers = {};
 
   @Action(RemoteUsersAction.AddRemoteUser)
-  public addRemoteUser({getState, setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.AddRemoteUser): void {
-    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
-    state[remoteUser.id] = remoteUser;
-
-    setState(state);
+  public addRemoteUser({setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.AddRemoteUser): void {
+    setState(
+      produce((state: RemoteUsers): void => {
+        state[remoteUser.id] = remoteUser;
+      })
+    );
   }
 
   @Action(RemoteUsersAction.RemoveRemoteUser)
-  public removeRemoteUser({getState, setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.RemoveRemoteUser): void {
-    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
-    delete state[remoteUser.id];
-
-    setState(state);
+  public removeRemoteUser({setState}: StateContext<RemoteUsers>, {remoteUser}: RemoteUsersAction.RemoveRemoteUser): void {
+    setState(
+      produce((state: RemoteUsers): void => {
+        delete state[remoteUser.id];
+      })
+    );
   }
 
   @Action(RemoteUsersAction.SetConnectionState)
-  public setConnectionState({getState, setState}: StateContext<RemoteUsers>, {remoteUser, connectionState}: RemoteUsersAction.SetConnectionState): void {
-    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
-    state[remoteUser.id].roomConnection = connectionState;
-
-    setState(state);
+  public setConnectionState({setState}: StateContext<RemoteUsers>, {remoteUser, connectionState}: RemoteUsersAction.SetConnectionState): void {
+    setState(
+      produce((state: RemoteUsers): void => {
+        state[remoteUser.id].roomConnection = connectionState;
+      })
+    );
   }
 
   @Action(RemoteUsersAction.SetAudioListenable)
-  public setAudioListenable({getState, setState}: StateContext<RemoteUsers>, {remoteUser, isAudioListenable}: RemoteUsersAction.SetAudioListenable): void {
-    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
-    state[remoteUser.id].isAudioListenable = isAudioListenable;
-
-    setState(state);
+  public setAudioListenable({setState}: StateContext<RemoteUsers>, {remoteUser, isAudioListenable}: RemoteUsersAction.SetAudioListenable): void {
+    setState(
+      produce((state: RemoteUsers): void => {
+        state[remoteUser.id].isAudioListenable = isAudioListenable;
+      })
+    );
   }
 
   @Action(RemoteUsersAction.SetVideoVisible)
-  public setVideoVisible({getState, setState}: StateContext<RemoteUsers>, {remoteUser, isVideoVisible}: RemoteUsersAction.SetVideoVisible): void {
-    const state: RemoteUsers = JSON.parse(JSON.stringify(getState()));
-    state[remoteUser.id].isVideoVisible = isVideoVisible;
+  public setVideoVisible({setState}: StateContext<RemoteUsers>, {remoteUser, isVideoVisible}: RemoteUsersAction.SetVideoVisible): void {
+    setState(
+      produce((state: RemoteUsers): void => {
+        state[remoteUser.id].isVideoVisible = isVideoVisible;
+      })
+    );
+  }
 
-    setState(state);
+  @Action(RemoteUsersAction.SetAudioState)
+  public setAudioState({setState}: StateContext<RemoteUsers>, {remoteUser, isOn}: RemoteUsersAction.SetAudioState): void {
+    setState(
+      produce((state: RemoteUsers): void => {
+        state[remoteUser.id].zoomUser.isAudioOn = isOn;
+      })
+    );
+  }
+
+  @Action(RemoteUsersAction.SetVideoState)
+  public setVideoState({setState}: StateContext<RemoteUsers>, {remoteUser, isOn}: RemoteUsersAction.SetVideoState): void {
+    setState(
+      produce((state: RemoteUsers): void => {
+        state[remoteUser.id].zoomUser.isVideoOn = isOn;
+      })
+    );
   }
 }
 

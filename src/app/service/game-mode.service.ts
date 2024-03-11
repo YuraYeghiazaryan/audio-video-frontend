@@ -15,7 +15,7 @@ export class GameModeService {
   ) {}
 
   public createTeam(users: User[], teamId: TeamId, name: string, color: string): void {
-    this.store.dispatch(new GameModeAction.Create(teamId, name, color));
+    this.store.dispatch(new GameModeAction.CreateTeam(teamId, name, color));
     this.addUsersToTeam(teamId, users);
   }
 
@@ -38,11 +38,19 @@ export class GameModeService {
   }
 
   public deleteTeam(teamId: TeamId): void {
-    this.store.dispatch(new GameModeAction.Delete(teamId));
+    this.store.dispatch(new GameModeAction.DeleteTeam(teamId));
   }
 
   public deleteAllTeams(): void {
-    this.store.dispatch(new GameModeAction.DeleteAll());
+    this.store.dispatch(new GameModeAction.DeleteAllTeams());
+  }
+
+  public startGameMode(): void {
+    this.store.dispatch(new GameModeAction.StartGameMode);
+  }
+
+  public endGameMode(): void {
+    this.store.dispatch(new GameModeAction.EndGameMode);
   }
 
   public async startTeamTalk(): Promise<void> {

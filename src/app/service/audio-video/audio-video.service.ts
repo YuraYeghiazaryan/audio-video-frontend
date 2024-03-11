@@ -1,4 +1,5 @@
 import {Group} from "../grouping.service";
+import {UserId} from "../../model/types";
 
 export abstract class AudioVideoService {
 
@@ -7,6 +8,12 @@ export abstract class AudioVideoService {
   public abstract join(): Promise<void>;
   public abstract leave(): void;
 
+  public abstract setLocalUserVideoElement(element: HTMLVideoElement | HTMLCanvasElement): void;
+  public abstract removeLocalUserVideoElement(): void;
+
+  public abstract setRemoteUserVideoElement(userId: UserId, element: HTMLCanvasElement): Promise<void>;
+  public abstract removeRemoteUserVideoElement(userId: UserId): Promise<void>;
+
   public abstract startLocalVideo(): Promise<void>;
   public abstract stopLocalVideo(): Promise<void>;
 
@@ -14,4 +21,5 @@ export abstract class AudioVideoService {
   public abstract unmuteLocalAudio(): Promise<void>;
 
   public abstract breakRoomIntoGroups(groups: Group[]): Promise<void>;
+
 }

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --live-reload false",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -18,6 +18,8 @@
     "@angular/platform-browser": "^17.0.0",
     "@angular/platform-browser-dynamic": "^17.0.0",
     "@angular/router": "^17.0.0",
+    "immer": "^3.3.0",
+    "@ngxs-labs/immer-adapter": "^3.0.5",
     "@ngxs/store": "^3.8.2",
     "@stomp/stompjs": "^7.0.0",
     "@zoom/videosdk": "^1.10.5",

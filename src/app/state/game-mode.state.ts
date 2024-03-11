@@ -2,6 +2,7 @@ import {Action, State, StateContext} from "@ngxs/store";
 import {Injectable} from "@angular/core";
 import {TeamId, UserId} from "../model/types";
 import {Team} from "../model/team";
+import produce from "immer";
 
 export interface Teams {
   [key: TeamId]: Team
@@ -14,18 +15,18 @@ export interface GameMode {
 }
 
 export namespace GameModeAction {
-  export class Create {
+  export class CreateTeam {
     static readonly type: string = '[game-mode] create Team';
     constructor(public teamId: TeamId, public name: string, public color: string) {}
   }
 
-  export class Delete {
+  export class DeleteTeam {
     static readonly type: string = '[game-mode] delete Team';
     constructor(public teamId: TeamId) {}
   }
 
-  export class DeleteAll {
-    static readonly type: string = '[game-mode] delete all Team';
+  export class DeleteAllTeams {
+    static readonly type: string = '[game-mode] delete all Teams';
     constructor() {}
   }
 
@@ -93,33 +94,34 @@ export class GameModeState {
     teams: {}
   };
 
-  @Action(GameModeAction.Create)
-  public createTeam({getState, setState}: StateContext<GameMode>, {teamId, name, color}: GameModeAction.Create): void {
-    const state: GameMode = JSON.parse(JSON.stringify(getState()));
+  @Action(GameModeAction.CreateTeam)
+  public createTeam({setState}: StateContext<GameMode>, {teamId, name, color}: GameModeAction.CreateTeam): void {
+    setState(
+      produce((state: GameMode): void => {
+        if (state.teams[teamId]) {
+          throw Error(`Team ${teamId} already exists`);
+        }
 
-    if (state.teams[teamId]) {
-      throw Error(`Team ${teamId} already exists`);
-    }
-
-    state.teams[teamId] = {
-      id: teamId,
-      name,
-      color,
-      userIds: new Set<UserId>()
-    };
-
-    setState(state);
+        state.teams[teamId] = {
+          id: teamId,
+          name,
+          color,
+          userIds: new Set<UserId>()
+        };
+      })
+    );
   }
 
-  @Action(GameModeAction.Delete)
-  public deleteTeam({getState, setState}: StateContext<GameMode>, {teamId}: GameModeAction.Create): void {
-    const state: GameMode = JSON.parse(JSON.stringify(getState()));
-    delete state.teams[teamId];
-
-    setState(state);
+  @Action(GameModeAction.DeleteTeam)
+  public deleteTeam({setState}: StateContext<GameMode>, {teamId}: GameModeAction.CreateTeam): void {
+    setState(
+      produce((state: GameMode): void => {
+        delete state.teams[teamId];
+      })
+    );
   }
 
-  @Action(GameModeAction.DeleteAll)
+  @Action(GameModeAction.DeleteAllTeams)
   public deleteAllTeams({patchState}: StateContext<GameMode>): void {
     patchState({
       teams: {}
@@ -127,84 +129,84 @@ export class GameModeState {
   }
 
   @Action(GameModeAction.AddUserToTeam)
-  public addUserToTeam({getState, setState}: StateContext<GameMode>, {teamId, userId}: GameModeAction.AddUserToTeam): void {
-    const state: GameMode = JSON.parse(JSON.stringify(getState()));
+  public addUserToTeam({setState}: StateContext<GameMode>, {teamId, userId}: GameModeAction.AddUserToTeam): void {
+    setState(
+      produce((state: GameMode): void => {
+        if (!state.teams[teamId]) {
+          throw Error(`Team ${teamId} does not exists`);
+        }
 
-    if (!state.teams[teamId]) {
-      throw Error(`Team ${teamId} does not exists`);
-    }
-
-    state.teams[teamId].userIds.add(userId);
-
-    setState(state);
+        state.teams[teamId].userIds.add(userId);
+      })
+    );
   }
 
   @Action(GameModeAction.RemoveUserFromTeam)
-  public removeUserFromTeam({getState, setState}: StateContext<GameMode>, {teamId, userId}: GameModeAction.RemoveUserFromTeam): void {
-    const state: GameMode = JSON.parse(JSON.stringify(getState()));
+  public removeUserFromTeam({setState}: StateContext<GameMode>, {teamId, userId}: GameModeAction.RemoveUserFromTeam): void {
+    setState(
+      produce((state: GameMode): void => {
+        if (!state.teams[teamId]) {
+          throw Error(`Team ${teamId} does not exists`);
+        }
 
-    if (!state.teams[teamId]) {
-      throw Error(`Team ${teamId} does not exists`);
-    }
-
-    state.teams[teamId].userIds.delete(userId)
-
-    setState(state);
+        state.teams[teamId].userIds.delete(userId)
+      })
+    );
   }
 
   @Action(GameModeAction.AddUsersToTeam)
-  public addUsersToTeam({getState, setState}: StateContext<GameMode>, {teamId, userIds}: GameModeAction.AddUsersToTeam): void {
-    const state: GameMode = JSON.parse(JSON.stringify(getState()));
+  public addUsersToTeam({setState}: StateContext<GameMode>, {teamId, userIds}: GameModeAction.AddUsersToTeam): void {
+    setState(
+      produce((state: GameMode): void => {
+        if (!state.teams[teamId]) {
+          throw Error(`Team ${teamId} does not exists`);
+        }
 
-    if (!state.teams[teamId]) {
-      throw Error(`Team ${teamId} does not exists`);
-    }
-
-    userIds.forEach((userId: UserId): Set<UserId> => state.teams[teamId].userIds.add(userId));
-
-    setState(state);
+        userIds.forEach((userId: UserId): Set<UserId> => state.teams[teamId].userIds.add(userId));
+      })
+    );
   }
 
   @Action(GameModeAction.RemoveUsersFromTeam)
-  public removeUsersFromTeam({getState, setState}: StateContext<GameMode>, {teamId, userIds}: GameModeAction.RemoveUsersFromTeam): void {
-    const state: GameMode = JSON.parse(JSON.stringify(getState()));
+  public removeUsersFromTeam({setState}: StateContext<GameMode>, {teamId, userIds}: GameModeAction.RemoveUsersFromTeam): void {
+    setState(
+      produce((state: GameMode): void => {
+        if (!state.teams[teamId]) {
+          throw Error(`Team ${teamId} does not exists`);
+        }
 
-    if (!state.teams[teamId]) {
-      throw Error(`Team ${teamId} does not exists`);
-    }
-
-    userIds.forEach((userId: UserId): boolean => state.teams[teamId].userIds.delete(userId));
-
-    setState(state);
+        userIds.forEach((userId: UserId): boolean => state.teams[teamId].userIds.delete(userId));
+      })
+    );
   }
 
   @Action(GameModeAction.MoveUser)
-  public moveUser({getState, setState}: StateContext<GameMode>, {fromTeamId, toTeamId, userId}: GameModeAction.MoveUser): void {
-    const state: GameMode = JSON.parse(JSON.stringify(getState()));
+  public moveUser({setState}: StateContext<GameMode>, {fromTeamId, toTeamId, userId}: GameModeAction.MoveUser): void {
+    setState(
+      produce((state: GameMode): void => {
+        if (!state.teams[fromTeamId] || !state.teams[toTeamId]) {
+          throw Error(`Team ${fromTeamId} or ${toTeamId} does not exists`);
+        }
 
-    if (!state.teams[fromTeamId] || !state.teams[toTeamId]) {
-      throw Error(`Team ${fromTeamId} or ${toTeamId} does not exists`);
-    }
-
-    state.teams[fromTeamId].userIds.delete(userId);
-    state.teams[toTeamId].userIds.add(userId);
-
-    setState(state);
+        state.teams[fromTeamId].userIds.delete(userId);
+        state.teams[toTeamId].userIds.add(userId);
+      })
+    );
   }
 
   @Action(GameModeAction.MergeTeams)
-  public mergeTeams({getState, setState}: StateContext<GameMode>, {fromTeamId, toTeamId}: GameModeAction.MergeTeams): void {
-    const state: GameMode = JSON.parse(JSON.stringify(getState()));
+  public mergeTeams({setState}: StateContext<GameMode>, {fromTeamId, toTeamId}: GameModeAction.MergeTeams): void {
+    setState(
+      produce((state: GameMode): void => {
+        if (!state.teams[fromTeamId] || !state.teams[toTeamId]) {
+          throw Error(`Team ${fromTeamId} or ${toTeamId} does not exists`);
+        }
 
-    if (!state.teams[fromTeamId] || !state.teams[toTeamId]) {
-      throw Error(`Team ${fromTeamId} or ${toTeamId} does not exists`);
-    }
-
-    const userIdsToMove: UserId[] = Object.values(state.teams[fromTeamId].userIds);
-    userIdsToMove.forEach((userId: UserId): Set<UserId> => state.teams[toTeamId].userIds.add(userId));
-    delete state.teams[fromTeamId];
-
-    setState(state);
+        const userIdsToMove: UserId[] = Object.values(state.teams[fromTeamId].userIds);
+        userIdsToMove.forEach((userId: UserId): Set<UserId> => state.teams[toTeamId].userIds.add(userId));
+        delete state.teams[fromTeamId];
+      })
+    );
   }
 
   @Action(GameModeAction.StartGameMode)

@@ -1,6 +1,7 @@
 import {Action, State, StateContext} from "@ngxs/store";
 import {Injectable} from "@angular/core";
 import {UserId} from "../model/types";
+import produce from "immer";
 
 export interface PrivateTalk {
   isStarted: boolean;
@@ -57,22 +58,20 @@ export class PrivateTalkState {
   }
 
   @Action(PrivateTalkAction.AddUser)
-  public addUser({getState, patchState}: StateContext<PrivateTalk>, {userId}: PrivateTalkAction.AddUser): void {
-    const state: PrivateTalk = getState();
-    state.userIds.add(userId);
-
-    patchState({
-      userIds: new Set([...state.userIds])
-    });
+  public addUser({setState}: StateContext<PrivateTalk>, {userId}: PrivateTalkAction.AddUser): void {
+    setState(
+      produce((state: PrivateTalk): void => {
+        state.userIds.add(userId);
+      })
+    );
   }
 
   @Action(PrivateTalkAction.RemoveUser)
-  public removeUser({ getState, patchState }: StateContext<PrivateTalk>, { userId }: PrivateTalkAction.RemoveUser): void {
-    const state: PrivateTalk = getState();
-    state.userIds.delete(userId);
-
-    patchState({
-      userIds: new Set([...state.userIds])
-    });
+  public removeUser({setState}: StateContext<PrivateTalk>, { userId }: PrivateTalkAction.RemoveUser): void {
+    setState(
+      produce((state: PrivateTalk): void => {
+        state.userIds.delete(userId);
+      })
+    );
   }
 }

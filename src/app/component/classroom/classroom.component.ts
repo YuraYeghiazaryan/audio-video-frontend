@@ -1,7 +1,7 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {UserService} from "../../service/user.service";
 import {Router} from "@angular/router";
-import {NgForOf, NgIf} from "@angular/common";
+import {KeyValuePipe, NgForOf, NgIf} from "@angular/common";
 import {Classroom} from "../../model/classroom";
 import {LocalUser} from "../../model/local-user";
 import {Store} from "@ngxs/store";
@@ -13,10 +13,13 @@ import {catchError, ObservableInput, throwError} from "rxjs";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {WebSocketService} from "../../service/web-socket.service";
 import {MessageHandleService} from "../../service/message-handle.service";
-import {RoomConnection} from "../../model/user";
+import {RoomConnection, User} from "../../model/user";
 import {AudioVideoService} from "../../service/audio-video/audio-video.service";
 import {GameMode, GameModeState} from "../../state/game-mode.state";
-import {ValuesPipe} from "../../pipe/values.pipe";
+import {TeamId,} from "../../model/types";
+import {GameModeService} from "../../service/game-mode.service";
+import {RemoteUserComponent} from "./remote-users/remote-user/remote-user.component";
+import {LocalUserComponent} from "./remote-users/local-user/local-user.component";
 
 @Component({
   selector: 'app-classroom',
@@ -25,7 +28,9 @@ import {ValuesPipe} from "../../pipe/values.pipe";
     NgForOf,
     FilterOnlineUsersPipe,
     NgIf,
-    ValuesPipe
+    KeyValuePipe,
+    RemoteUserComponent,
+    LocalUserComponent
   ],
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.css'
@@ -41,6 +46,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   constructor(
     protected userService: UserService,
     private audioVideoService: AudioVideoService,
+    private gameModeService: GameModeService,
     private websocketService: WebSocketService,
     private messageHandleServiceService: MessageHandleService,
     private httpClient: HttpClient,
@@ -134,7 +140,38 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected createTeams(): void {
+  protected createDemoTeams(): void {
+    const colors: any = {};
+    colors[0] = '#018499';
+    colors[1] = '#e8f149';
+    colors[2] = '#ff2015';
+    colors[3] = '#00ff99';
+    colors[4] = '#1100f2';
+    colors[5] = '#00ff00';
 
+    let teamId: TeamId = 0;
+
+    const users: User[] = Object.values(this.remoteUsers);
+    users.push(this.localUser);
+
+    users.reduce((result: User[][], value: User, index: number, array: User[]): User[][] => {
+      if (index % 2 === 0) {
+        result.push(array.slice(index, index + 2));
+      }
+
+      return result;
+    }, []).forEach((users: User[]): void => {
+      this.gameModeService.createTeam(users, teamId, `team_${teamId}`, colors[teamId]);
+      teamId++;
+    });
+    this.gameModeService.startGameMode();
+  }
+
+  public toggleTeamTalk(): void {
+    if (this.gameMode.isTeamTalkStarted) {
+      this.gameModeService.startTeamTalk().then();
+    } else {
+      this.gameModeService.endTeamTalk().then();
+    }
   }
 }

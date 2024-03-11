@@ -1,8 +1,4 @@
-<div *ngIf="localUser.zoomUser" id="my-self-view-video">
-  {{ localUser.username }} {{ localUser.id }}
-  <canvas [id]="'u_' + localUser.zoomUser.id" width="200" height="122"></canvas>
-</div>
-<h1> {{ this.localUser.username }} </h1>
+<app-local-user></app-local-user>
 
 <button (click)="toggleVideo()" [disabled]="!joined">
   {{ this.localUser.zoomUser?.isVideoOn ? 'Off Video' : 'On Video' }}
@@ -12,35 +8,32 @@
   {{ this.localUser.zoomUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
 </button>
 
-<button (click)="createTeams()">
+<button (click)="createDemoTeams()">
   Creations Teams demo
+</button>
+
+<button (click)="toggleTeamTalk()">
+  {{ gameMode.isTeamTalkStarted ? 'End' : 'Start' }} team talk
 </button>
 
 <div id="remote-users">
 
-  <ng-container *ngIf="gameMode?.isStarted; then inGameMode else notInGameMode"></ng-container>
+  <ng-container *ngIf="gameMode.isStarted; then inGameMode else notInGameMode"></ng-container>
   <ng-template #inGameMode>
-    <div *ngFor="let team of gameMode.teams | values">
-
-      <ng-container *ngFor="let userId of team.userIds">
-
-        <div style="border: black" *ngIf="remoteUsers[userId].isVideoVisible">
-          {{ remoteUsers[userId].username }} {{ userId }} {{ team.color }} {{ team.name }}
-
-          <canvas [id]="'u_' + remoteUsers[userId].zoomUser.id" width="200" height="122"></canvas>
-        </div>
-
+    <div *ngFor="let team of gameMode.teams | keyvalue">
+      In game mode
+      <ng-container *ngIf="team.value.userIds.has(localUser.id)">
+        <ng-container  *ngFor="let userId of team.value.userIds">
+          <app-remote-user [remoteUser]="remoteUsers[userId]"></app-remote-user>
+        </ng-container>
       </ng-container>
-
     </div>
   </ng-template>
 
   <ng-template #notInGameMode>
+    Not in game mode
     <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | filterOnlineUsers)">
-      {{ remoteUser.username }} {{ remoteUser.id }}
-
-      <canvas [id]="'u_' + remoteUser.zoomUser.id" width="200" height="122"></canvas>
+      <app-remote-user [remoteUser]="remoteUser"></app-remote-user>
     </div>
   </ng-template>
-
 </div>

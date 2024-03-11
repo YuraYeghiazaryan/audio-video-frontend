@@ -39,6 +39,11 @@ export class UserService {
       `http://localhost:8090/classroom/${this.classroom?.roomNumber}/users`
     ));
 
+    remoteUsers.forEach((remoteUser: RemoteUser): void => {
+      remoteUser.isAudioListenable = true;
+      remoteUser.isVideoVisible = true;
+    });
+
     this.addRemoteUsers(remoteUsers);
   }
 

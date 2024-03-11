@@ -10,6 +10,7 @@ import {LocalUserState} from "./state/local-user.state";
 import {RemoteUsersState} from "./state/remote-users.state";
 import {AudioVideoService} from "./service/audio-video/audio-video.service";
 import {ZoomService} from "./service/audio-video/provider/zoom.service";
+import {GameModeState} from "./state/game-mode.state";
 
 export function initializeApp(classroomService: ClassroomService): () => Promise<void> {
   return (): Promise<void> => {
@@ -27,7 +28,8 @@ export const appConfig: ApplicationConfig = {
       NgxsModule.forRoot([
         ClassroomState,
         LocalUserState,
-        RemoteUsersState
+        RemoteUsersState,
+        GameModeState
       ])
     ),
     provideRouter(routes),

@@ -2,6 +2,7 @@ import {Action, State, StateContext} from '@ngxs/store';
 import {Injectable} from '@angular/core';
 import {LocalUser} from "../model/local-user";
 import {Role, RoomConnection, ZoomUser} from "../model/user";
+import produce from "immer";
 
 export namespace LocalUserAction {
   export class SetLocalUser {
@@ -55,25 +56,28 @@ export class LocalUserState {
   }
 
   @Action(LocalUserAction.SetIsVideoOn)
-  public setIsVideoOn({getState, setState}: StateContext<LocalUser>, {isVideoOn}: LocalUserAction.SetIsVideoOn): void {
-    const state: LocalUser = getState();
-    if (!state.zoomUser) {
-      throw Error('Can\'t set isVideoOn. Local user doesn\'t have zoomUser');
-    }
-
-    state.zoomUser.isVideoOn = isVideoOn;
-    setState(state);
+  public setIsVideoOn({setState}: StateContext<LocalUser>, {isVideoOn}: LocalUserAction.SetIsVideoOn): void {
+    setState(
+      produce((state: LocalUser): void => {
+        if (!state.zoomUser) {
+          throw Error('Can\'t set isVideoOn. Local user doesn\'t have zoomUser');
+        }
+        state.zoomUser.isVideoOn = isVideoOn;
+      })
+    );
   }
 
   @Action(LocalUserAction.SetIsAudioOn)
-  public setIsAudioOn({getState, setState}: StateContext<LocalUser>, {isAudioOn}: LocalUserAction.SetIsAudioOn): void {
-    const state: LocalUser = getState();
-    if (!state.zoomUser) {
-      throw Error('Can\'t set isAudioOn. Local user doesn\'t have zoomUser');
-    }
+  public setIsAudioOn({setState}: StateContext<LocalUser>, {isAudioOn}: LocalUserAction.SetIsAudioOn): void {
+    setState(
+      produce((state: LocalUser): void => {
+        if (!state.zoomUser) {
+          throw Error('Can\'t set isAudioOn. Local user doesn\'t have zoomUser');
+        }
 
-    state.zoomUser.isAudioOn = isAudioOn;
-    setState(state);
+        state.zoomUser.isAudioOn = isAudioOn;
+      })
+    );
   }
 
   @Action(LocalUserAction.SetConnectionState)
