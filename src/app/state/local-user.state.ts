@@ -1,7 +1,7 @@
 import {Action, State, StateContext} from '@ngxs/store';
 import {Injectable} from '@angular/core';
 import {LocalUser} from "../model/local-user";
-import {Role, RoomConnection, ZoomUser} from "../model/user";
+import {Role, RoomConnection, AudioVideoUser} from "../model/user";
 import produce from "immer";
 
 export namespace LocalUserAction {
@@ -10,9 +10,9 @@ export namespace LocalUserAction {
     constructor(public localUser: LocalUser) {}
   }
 
-  export class SetZoomUser {
-    public static readonly type: string = '[local-user] set zoom user';
-    constructor(public zoomUser: ZoomUser) {}
+  export class SetAudioVideo {
+    public static readonly type: string = '[local-user] set audio-video user';
+    constructor(public audioVideoUser: AudioVideoUser) {}
   }
 
   export class SetIsVideoOn {
@@ -50,19 +50,19 @@ export class LocalUserState {
     setState(localUser);
   }
 
-  @Action(LocalUserAction.SetZoomUser)
-  public setZoomUser({patchState}: StateContext<LocalUser>, {zoomUser}: LocalUserAction.SetZoomUser): void {
-    patchState({zoomUser});
+  @Action(LocalUserAction.SetAudioVideo)
+  public setAudioVideoUser({patchState}: StateContext<LocalUser>, {audioVideoUser}: LocalUserAction.SetAudioVideo): void {
+    patchState({audioVideoUser: audioVideoUser});
   }
 
   @Action(LocalUserAction.SetIsVideoOn)
   public setIsVideoOn({setState}: StateContext<LocalUser>, {isVideoOn}: LocalUserAction.SetIsVideoOn): void {
     setState(
       produce((state: LocalUser): void => {
-        if (!state.zoomUser) {
-          throw Error('Can\'t set isVideoOn. Local user doesn\'t have zoomUser');
+        if (!state.audioVideoUser) {
+          throw Error('Can\'t set isVideoOn. Local user doesn\'t have audio-video user');
         }
-        state.zoomUser.isVideoOn = isVideoOn;
+        state.audioVideoUser.isVideoOn = isVideoOn;
       })
     );
   }
@@ -71,11 +71,11 @@ export class LocalUserState {
   public setIsAudioOn({setState}: StateContext<LocalUser>, {isAudioOn}: LocalUserAction.SetIsAudioOn): void {
     setState(
       produce((state: LocalUser): void => {
-        if (!state.zoomUser) {
-          throw Error('Can\'t set isAudioOn. Local user doesn\'t have zoomUser');
+        if (!state.audioVideoUser) {
+          throw Error('Can\'t set isAudioOn. Local user doesn\'t have audio-video user');
         }
 
-        state.zoomUser.isAudioOn = isAudioOn;
+        state.audioVideoUser.isAudioOn = isAudioOn;
       })
     );
   }

@@ -1,11 +1,11 @@
-import {UserId, ZoomUserId} from "./types";
+import {UserId, AudioVideoUserId} from "./types";
 
 export interface User {
   id: UserId;
   username: string;
   role: Role;
   roomConnection: RoomConnection;
-  zoomUser?: ZoomUser;
+  audioVideoUser?: AudioVideoUser;
 }
 
 export enum RoomConnection {
@@ -14,8 +14,8 @@ export enum RoomConnection {
   PENDING = 'PENDING'
 }
 
-export interface ZoomUser {
-  id: ZoomUserId;
+export interface AudioVideoUser {
+  id: AudioVideoUserId;
   isVideoOn: boolean;
   isAudioOn: boolean;
 }

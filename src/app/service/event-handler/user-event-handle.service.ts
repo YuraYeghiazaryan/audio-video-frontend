@@ -27,7 +27,7 @@ export class UserEventHandleService {
       return;
     }
 
-    if (user.zoomUser) {
+    if (user.audioVideoUser) {
       const remoteUser: RemoteUser = user as RemoteUser;
       remoteUser.isAudioListenable = true;
       remoteUser.isVideoVisible = true;

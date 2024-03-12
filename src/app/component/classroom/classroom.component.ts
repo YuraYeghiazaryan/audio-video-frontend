@@ -107,7 +107,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   }
 
   public toggleVideo(): void {
-    if (this.localUser.zoomUser?.isVideoOn) {
+    if (this.localUser.audioVideoUser?.isVideoOn) {
       this.audioVideoService.stopLocalVideo().then()
     } else {
       this.audioVideoService.startLocalVideo().then()
@@ -115,7 +115,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   };
 
   public toggleAudio(): void {
-    if (this.localUser.zoomUser?.isAudioOn) {
+    if (this.localUser.audioVideoUser?.isAudioOn) {
       this.audioVideoService.muteLocalAudio().then()
     } else {
       this.audioVideoService.unmuteLocalAudio().then()

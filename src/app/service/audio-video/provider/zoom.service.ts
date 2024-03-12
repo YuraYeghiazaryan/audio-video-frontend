@@ -13,8 +13,8 @@ import {Store} from "@ngxs/store";
 import ZoomVideo, {ConnectionChangePayload, ConnectionState, Participant} from "@zoom/videosdk";
 import {RemoteUser} from "../../../model/remote-user";
 import {lastValueFrom} from "rxjs";
-import {UserId, ZoomUserId} from "../../../model/types";
-import {ZoomUser} from "../../../model/user";
+import {UserId, AudioVideoUserId} from "../../../model/types";
+import {AudioVideoUser} from "../../../model/user";
 import {Group} from "../../grouping.service";
 import SetAudioListenable = RemoteUsersAction.SetAudioListenable;
 import SetVideoVisible = RemoteUsersAction.SetVideoVisible;
@@ -83,11 +83,11 @@ export class ZoomService extends AudioVideoService {
 
   public override setLocalUserVideoElement(element: HTMLCanvasElement): void {
     this.localUserVideoElement = element;
-    if (!this.localUser.zoomUser) {
+    if (!this.localUser.audioVideoUser) {
       return;
     }
 
-    if (this.localUser.zoomUser.isVideoOn) {
+    if (this.localUser.audioVideoUser.isVideoOn) {
       this.startLocalVideo().then();
     }
   }
@@ -103,19 +103,19 @@ export class ZoomService extends AudioVideoService {
 
     this.remoteUserVideoElements[userId] = element;
 
-    if (remoteUser.zoomUser.isVideoOn) {
-      await this.renderUserVideo(remoteUser.zoomUser.id);
+    if (remoteUser.audioVideoUser.isVideoOn) {
+      await this.renderUserVideo(remoteUser.audioVideoUser.id);
     }
   }
   public override async removeRemoteUserVideoElement(userId: UserId): Promise<void> {
     const remoteUser: RemoteUser | undefined = this.remoteUsers[userId];
+    await this.stopUserVideo(remoteUser.audioVideoUser.id);
 
     delete this.remoteUserVideoElements[userId];
-    await this.stopUserVideo(remoteUser.zoomUser.id);
   }
 
   public override async startLocalVideo(): Promise<void> {
-    if (!this.stream || !this.localUser.zoomUser) {
+    if (!this.stream || !this.localUser.audioVideoUser) {
       return Promise.reject(`Can't turn on local User video`);
     }
 
@@ -211,11 +211,11 @@ export class ZoomService extends AudioVideoService {
   }
 
   private async muteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
-    await this.stream.muteUserAudioLocally(remoteUser.zoomUser.id);
+    await this.stream.muteUserAudioLocally(remoteUser.audioVideoUser.id);
   }
 
   private async unmuteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
-    await this.stream.unmuteUserAudioLocally(remoteUser.zoomUser.id);
+    await this.stream.unmuteUserAudioLocally(remoteUser.audioVideoUser.id);
   }
 
   /** if user is logged in, get connection options from BE */
@@ -262,13 +262,13 @@ export class ZoomService extends AudioVideoService {
   }
 
   /** render remote user video when joined to zoom or when user turn on video */
-  private async renderUserVideo(userId: ZoomUserId): Promise<void> {
+  private async renderUserVideo(userId: AudioVideoUserId): Promise<void> {
     if (!this.stream) {
       throw Error(`Trying to turn on ${userId} User video. Stream is not found`);
     }
 
     const remoteUser: RemoteUser = Object.values(this.remoteUsers).find((remoteUser: RemoteUser): boolean => {
-      return remoteUser.zoomUser.id === userId;
+      return remoteUser.audioVideoUser.id === userId;
     })
     if (!remoteUser) {
       return;
@@ -283,13 +283,13 @@ export class ZoomService extends AudioVideoService {
   }
 
   /** stop remote user video when user turn off video */
-  private async stopUserVideo(userId: ZoomUserId): Promise<void> {
+  private async stopUserVideo(userId: AudioVideoUserId): Promise<void> {
     if (!this.stream) {
       throw Error(`Trying to turn off ${userId} User video. Stream is not found`);
     }
 
     const remoteUser: RemoteUser = Object.values(this.remoteUsers).find((remoteUser: RemoteUser): boolean => {
-      return remoteUser.zoomUser.id === userId;
+      return remoteUser.audioVideoUser.id === userId;
     })
     if (!remoteUser) {
       return;
@@ -300,11 +300,7 @@ export class ZoomService extends AudioVideoService {
       return;
     }
 
-    try {
-      await this.stream.stopRenderVideo(remoteUserVideo, userId);
-    } catch (a) {
-
-    }
+    await this.stream.stopRenderVideo(remoteUserVideo, userId);
   }
 
   /** initialize stream, get media stream, register event listeners and render videos of remote users */
@@ -322,24 +318,24 @@ export class ZoomService extends AudioVideoService {
     const localParticipant: Participant = this.client.getUser(localParticipantId);
 
     /* initialize local zoom state */
-    const zoomUser: ZoomUser = {
+    const audioVideoUser: AudioVideoUser = {
       id: localParticipant.userId,
       isVideoOn: localParticipant.bVideoOn,
       isAudioOn: localParticipant.muted || false,
     };
 
-    this.store.dispatch(new LocalUserAction.SetZoomUser(zoomUser));
+    this.store.dispatch(new LocalUserAction.SetAudioVideo(audioVideoUser));
 
     /* video rendered */
     const participants: Participant[] = this.client.getAllUser();
     participants.forEach((participant: Participant): void => {
-      if (participant.userId === this.localUser.zoomUser?.id) {
+      if (participant.userId === this.localUser.audioVideoUser?.id) {
         return;
       }
 
       const remoteUser: RemoteUser | undefined = Object.values(this.remoteUsers)
         .find((remoteUser: RemoteUser): boolean => {
-          return remoteUser.zoomUser.id === participant.userId;
+          return remoteUser.audioVideoUser.id === participant.userId;
         });
 
       if (!remoteUser) {

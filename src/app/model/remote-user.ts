@@ -1,7 +1,7 @@
-import {User, ZoomUser} from "./user";
+import {User, AudioVideoUser} from "./user";
 
 export interface RemoteUser extends User {
   isAudioListenable: boolean;
   isVideoVisible: boolean;
-  zoomUser: ZoomUser;
+  audioVideoUser: AudioVideoUser;
 }

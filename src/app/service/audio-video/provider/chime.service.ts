@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import {AudioVideoService} from "../audio-video.service";
 import {Group} from "../../grouping.service";
+import {UserId} from "../../../model/types";
 
 @Injectable({
   providedIn: 'root'
@@ -36,4 +37,18 @@ export class ChimeService extends AudioVideoService {
   }
 
   public override async breakRoomIntoGroups(groups: Group[]): Promise<void> {}
+
+  public removeLocalUserVideoElement(): void {
+  }
+
+  public removeRemoteUserVideoElement(userId: UserId): Promise<void> {
+    return Promise.resolve(undefined);
+  }
+
+  public setLocalUserVideoElement(element: HTMLVideoElement | HTMLCanvasElement): void {
+  }
+
+  public setRemoteUserVideoElement(userId: UserId, element: HTMLCanvasElement): Promise<void> {
+    return Promise.resolve(undefined);
+  }
 }

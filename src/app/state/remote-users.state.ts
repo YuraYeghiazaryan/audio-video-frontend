@@ -104,7 +104,7 @@ export class RemoteUsersState {
   public setAudioState({setState}: StateContext<RemoteUsers>, {remoteUser, isOn}: RemoteUsersAction.SetAudioState): void {
     setState(
       produce((state: RemoteUsers): void => {
-        state[remoteUser.id].zoomUser.isAudioOn = isOn;
+        state[remoteUser.id].audioVideoUser.isAudioOn = isOn;
       })
     );
   }
@@ -113,7 +113,7 @@ export class RemoteUsersState {
   public setVideoState({setState}: StateContext<RemoteUsers>, {remoteUser, isOn}: RemoteUsersAction.SetVideoState): void {
     setState(
       produce((state: RemoteUsers): void => {
-        state[remoteUser.id].zoomUser.isVideoOn = isOn;
+        state[remoteUser.id].audioVideoUser.isVideoOn = isOn;
       })
     );
   }

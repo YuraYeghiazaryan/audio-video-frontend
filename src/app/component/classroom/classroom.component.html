@@ -1,11 +1,11 @@
 <app-local-user></app-local-user>
 
 <button (click)="toggleVideo()" [disabled]="!joined">
-  {{ this.localUser.zoomUser?.isVideoOn ? 'Off Video' : 'On Video' }}
+  {{ this.localUser.audioVideoUser?.isVideoOn ? 'Off Video' : 'On Video' }}
 </button>
 
 <button (click)="toggleAudio()" [disabled]="!joined">
-  {{ this.localUser.zoomUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
+  {{ this.localUser.audioVideoUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
 </button>
 
 <button (click)="createDemoTeams()">
@@ -19,15 +19,16 @@
 <div id="remote-users">
 
   <ng-container *ngIf="gameMode.isStarted; then inGameMode else notInGameMode"></ng-container>
+
   <ng-template #inGameMode>
-    <div *ngFor="let team of gameMode.teams | keyvalue">
+    <ng-container *ngFor="let team of gameMode.teams | keyvalue">
       In game mode
       <ng-container *ngIf="team.value.userIds.has(localUser.id)">
-        <ng-container  *ngFor="let userId of team.value.userIds">
-          <app-remote-user [remoteUser]="remoteUsers[userId]"></app-remote-user>
+        <ng-container *ngFor="let userId of team.value.userIds">
+          <app-remote-user *ngIf="remoteUsers[userId]" [remoteUser]="remoteUsers[userId]"></app-remote-user>
         </ng-container>
       </ng-container>
-    </div>
+    </ng-container>
   </ng-template>
 
   <ng-template #notInGameMode>
