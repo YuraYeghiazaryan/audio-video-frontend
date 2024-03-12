@@ -5,7 +5,7 @@ import {ClassroomState} from "../../../state/classroom.state";
 import {LocalUser} from "../../../model/local-user";
 import {LocalUserAction, LocalUserState} from "../../../state/local-user.state";
 import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../../../state/remote-users.state";
-import {ConnectionOptions} from "../../../model/connection-options";
+import {ConnectionOptions} from "../../../model/zoom/connection-options";
 import {UserService} from "../../user.service";
 import {ConnectionHandleService} from "../../connection-handle.service";
 import {HttpClient} from "@angular/common/http";
@@ -136,14 +136,6 @@ export class ZoomService extends AudioVideoService {
     }
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(true));
-
-    this.httpClient.post<void>(
-      `http://localhost:8090/user/${this.classroom?.roomNumber}/user-video-state-changed`,
-      {
-        userId: this.localUser.id,
-        isOn: true
-      }
-    ).subscribe();
   }
   public override async stopLocalVideo(): Promise<void> {
     if (!this.stream) {
@@ -247,16 +239,16 @@ export class ZoomService extends AudioVideoService {
     this.client.on('connection-change', (connectionChangePayload: ConnectionChangePayload): void => {
       const localUserConnected: boolean = connectionChangePayload.state === ConnectionState.Connected;
 
-      this.connectionHandleService.zoomConnectionChanged(localUserConnected);
+      this.connectionHandleService.audioVideoConnectionChanged(localUserConnected);
     });
 
     this.client.on('peer-video-state-change', (payload: { action: "Start" | "Stop"; userId: number }): void => {
       if (payload.action === 'Start') {
         setTimeout((): void => {
-          this.renderUserVideo(payload.userId).then();
+          this.renderUserVideo(payload.userId + '').then();
         }, 100);
       } else if (payload.action === 'Stop') {
-        this.stopUserVideo(payload.userId).then();
+        this.stopUserVideo(payload.userId + '').then();
       }
     });
   }
@@ -319,23 +311,23 @@ export class ZoomService extends AudioVideoService {
 
     /* initialize local zoom state */
     const audioVideoUser: AudioVideoUser = {
-      id: localParticipant.userId,
+      id: localParticipant.userId + '',
       isVideoOn: localParticipant.bVideoOn,
       isAudioOn: localParticipant.muted || false,
     };
 
-    this.store.dispatch(new LocalUserAction.SetAudioVideo(audioVideoUser));
+    this.store.dispatch(new LocalUserAction.SetAudioVideoUser(audioVideoUser));
 
     /* video rendered */
     const participants: Participant[] = this.client.getAllUser();
     participants.forEach((participant: Participant): void => {
-      if (participant.userId === this.localUser.audioVideoUser?.id) {
+      if (participant.userId + '' === this.localUser.audioVideoUser?.id) {
         return;
       }
 
       const remoteUser: RemoteUser | undefined = Object.values(this.remoteUsers)
         .find((remoteUser: RemoteUser): boolean => {
-          return remoteUser.audioVideoUser.id === participant.userId;
+          return remoteUser.audioVideoUser.id === participant.userId + '';
         });
 
       if (!remoteUser) {
@@ -343,7 +335,7 @@ export class ZoomService extends AudioVideoService {
       }
 
       if (participant.bVideoOn) {
-        this.renderUserVideo(participant.userId);
+        this.renderUserVideo(participant.userId + '');
       }
     });
   }

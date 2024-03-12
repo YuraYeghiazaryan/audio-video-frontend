@@ -10,7 +10,7 @@ export namespace LocalUserAction {
     constructor(public localUser: LocalUser) {}
   }
 
-  export class SetAudioVideo {
+  export class SetAudioVideoUser {
     public static readonly type: string = '[local-user] set audio-video user';
     constructor(public audioVideoUser: AudioVideoUser) {}
   }
@@ -50,8 +50,8 @@ export class LocalUserState {
     setState(localUser);
   }
 
-  @Action(LocalUserAction.SetAudioVideo)
-  public setAudioVideoUser({patchState}: StateContext<LocalUser>, {audioVideoUser}: LocalUserAction.SetAudioVideo): void {
+  @Action(LocalUserAction.SetAudioVideoUser)
+  public setAudioVideoUser({patchState}: StateContext<LocalUser>, {audioVideoUser}: LocalUserAction.SetAudioVideoUser): void {
     patchState({audioVideoUser: audioVideoUser});
   }
 

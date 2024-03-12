@@ -17,7 +17,7 @@ export class RemoteUserComponent implements AfterViewInit, OnDestroy {
   public remoteUser: RemoteUser | undefined = undefined;
 
   @ViewChild("mediaWrapper")
-  private mediaWrapper: ElementRef<HTMLCanvasElement> | undefined = undefined;
+  private mediaWrapper: ElementRef<HTMLVideoElement> | undefined = undefined;
 
   constructor(
     private audioVideoService: AudioVideoService

@@ -11,7 +11,7 @@ import {Store} from "@ngxs/store";
 })
 export class ConnectionHandleService {
   private webSocketConnected?: boolean;
-  private zoomConnected?: boolean;
+  private audioVideoConnected?: boolean;
 
   private classroom: Classroom = ClassroomState.defaults;
   private localUser: LocalUser = LocalUserState.defaults;
@@ -28,18 +28,18 @@ export class ConnectionHandleService {
     this.connectionStateChanged();
   }
 
-  public zoomConnectionChanged(connected: boolean): void {
-    this.zoomConnected = connected;
+  public audioVideoConnectionChanged(connected: boolean): void {
+    this.audioVideoConnected = connected;
     this.connectionStateChanged();
   }
 
   private connectionStateChanged(): void {
-    if (this.webSocketConnected === undefined || this.zoomConnected === undefined) {
+    if (this.webSocketConnected === undefined || this.audioVideoConnected === undefined) {
       return;
     }
 
     /* user is connected, if connected to both VCR and Zoom services */
-    const connected: boolean = !(this.webSocketConnected && this.zoomConnected);
+    const connected: boolean = !(this.webSocketConnected && this.audioVideoConnected);
 
     this.httpClient.post<void>(
       `http://localhost:8090/classroom/${this.classroom?.roomNumber}/user-connection-state-changed`,

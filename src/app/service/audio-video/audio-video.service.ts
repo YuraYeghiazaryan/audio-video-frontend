@@ -11,7 +11,7 @@ export abstract class AudioVideoService {
   public abstract setLocalUserVideoElement(element: HTMLVideoElement | HTMLCanvasElement): void;
   public abstract removeLocalUserVideoElement(): void;
 
-  public abstract setRemoteUserVideoElement(userId: UserId, element: HTMLCanvasElement): Promise<void>;
+  public abstract setRemoteUserVideoElement(userId: UserId, element: HTMLCanvasElement | HTMLVideoElement): Promise<void>;
   public abstract removeRemoteUserVideoElement(userId: UserId): Promise<void>;
 
   public abstract startLocalVideo(): Promise<void>;
@@ -21,5 +21,4 @@ export abstract class AudioVideoService {
   public abstract unmuteLocalAudio(): Promise<void>;
 
   public abstract breakRoomIntoGroups(groups: Group[]): Promise<void>;
-
 }

@@ -18,11 +18,12 @@
     "@angular/platform-browser": "^17.0.0",
     "@angular/platform-browser-dynamic": "^17.0.0",
     "@angular/router": "^17.0.0",
-    "immer": "^3.3.0",
     "@ngxs-labs/immer-adapter": "^3.0.5",
     "@ngxs/store": "^3.8.2",
     "@stomp/stompjs": "^7.0.0",
     "@zoom/videosdk": "^1.10.5",
+    "amazon-chime-sdk-js": "^3.20.0",
+    "immer": "^3.3.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.2"

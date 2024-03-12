@@ -108,9 +108,25 @@ export class ClassroomComponent implements OnInit, OnDestroy {
 
   public toggleVideo(): void {
     if (this.localUser.audioVideoUser?.isVideoOn) {
-      this.audioVideoService.stopLocalVideo().then()
+      this.audioVideoService.stopLocalVideo().then((): void => {
+        this.httpClient.post<void>(
+          `http://localhost:8090/user/${this.classroom?.roomNumber}/user-video-state-changed`,
+          {
+            userId: this.localUser.id,
+            isOn: false
+          }
+        ).subscribe();
+      });
     } else {
-      this.audioVideoService.startLocalVideo().then()
+      this.audioVideoService.startLocalVideo().then((): void => {
+        this.httpClient.post<void>(
+          `http://localhost:8090/user/${this.classroom?.roomNumber}/user-video-state-changed`,
+          {
+            userId: this.localUser.id,
+            isOn: true
+          }
+        ).subscribe();
+      });
     }
   };
 

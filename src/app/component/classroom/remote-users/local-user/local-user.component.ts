@@ -17,7 +17,7 @@ import {AudioVideoService} from "../../../../service/audio-video/audio-video.ser
 export class LocalUserComponent implements OnDestroy {
 
   @ViewChild("mediaWrapper")
-  public set mediaWrapper(mediaWrapper: ElementRef<HTMLVideoElement | HTMLCanvasElement>) {
+  public set mediaWrapper(mediaWrapper: ElementRef<HTMLVideoElement>) {
     if (mediaWrapper?.nativeElement) {
       this.audioVideoService.setLocalUserVideoElement(mediaWrapper.nativeElement);
     }
