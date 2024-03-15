@@ -12,6 +12,7 @@ import {AudioVideoService} from "./service/audio-video/audio-video.service";
 import {ZoomService} from "./service/audio-video/provider/zoom.service";
 import {GameModeState} from "./state/game-mode.state";
 import {ChimeService} from "./service/audio-video/provider/chime.service";
+import {PrivateTalkState} from "./state/private-talk.state";
 
 export function initializeApp(classroomService: ClassroomService): () => Promise<void> {
   return (): Promise<void> => {
@@ -24,13 +25,15 @@ export const appConfig: ApplicationConfig = {
     {
       provide: AudioVideoService,
       useClass: ChimeService
+      // useClass: ZoomService
     },
     importProvidersFrom(
       NgxsModule.forRoot([
         ClassroomState,
         LocalUserState,
         RemoteUsersState,
-        GameModeState
+        GameModeState,
+        PrivateTalkState
       ])
     ),
     provideRouter(routes),

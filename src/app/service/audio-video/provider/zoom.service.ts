@@ -221,10 +221,11 @@ export class ZoomService extends AudioVideoService {
     }
 
     return lastValueFrom(this.httpClient.get<ConnectionOptions>(
-      'http://localhost:8090/zoom/connection-options',
+      'http://localhost:8090/audio-video/main-session/connection-options',
       {
         params: {
-          sessionName: this.classroom.roomNumber,
+          roomNumber: this.classroom.roomNumber,
+          groupId: 0,
           username: this.localUser.username
         }
       }

@@ -9,9 +9,14 @@ import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
 import {PrivateTalk, PrivateTalkState} from "../state/private-talk.state";
 import {GameMode, GameModeState} from "../state/game-mode.state";
 import {Team} from "../model/team";
+import {HttpClient} from "@angular/common/http";
+import {Classroom} from "../model/classroom";
+import {ClassroomState} from "../state/classroom.state";
+import {lastValueFrom} from "rxjs";
 
 
 export interface Group {
+  id: number;
   userIds: Set<UserId>;
   isAudioAvailableForLocalUser: boolean;
   isVideoAvailableForLocalUser: boolean;
@@ -24,13 +29,16 @@ export interface Group {
 export class GroupingService {
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
+  private classroom: Classroom = ClassroomState.defaults;
 
   private privateTalk: PrivateTalk = PrivateTalkState.defaults;
   private gameMode: GameMode = GameModeState.defaults;
 
+  private static nextGroupId: number = 0;
+
   constructor(
-    private audioVideoService: AudioVideoService,
-    private store: Store
+    private store: Store,
+    private httpClient: HttpClient
   ) {
     this.listenStoreChanges();
   }
@@ -40,6 +48,8 @@ export class GroupingService {
     /* should be users set, which are not in any Team */
     const freeUserIds: Set<UserId> = new Set<UserId>(Object.keys(this.remoteUsers).map(parseInt)).add(this.localUser.id);
     const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
+
+    GroupingService.nextGroupId = 0;
 
     if (this.gameMode.isTeamTalkStarted) {
       this.updateGroupsForTeamTalk(groups, freeUserIds, isLocalUserInAnyTeam);
@@ -51,7 +61,9 @@ export class GroupingService {
       this.updateGroupsForPrivateTalk(groups);
     }
 
-    await this.audioVideoService.breakRoomIntoGroups(groups);
+    if (this.gameMode.isTeamTalkStarted || this.privateTalk.isStarted) {
+      await this.sendBreakRoomIntoGroups(groups);
+    }
   }
 
   /** update groups for students who are in Teams */
@@ -77,6 +89,7 @@ export class GroupingService {
       }
 
       return  {
+        id: GroupingService.nextGroupId++,
         userIds: team.userIds,
         isAudioAvailableForLocalUser,
         isVideoAvailableForLocalUser
@@ -104,6 +117,7 @@ export class GroupingService {
     }
 
     const freeUsersGroup: Group = {
+      id: GroupingService.nextGroupId++,
       userIds: freeUserIds,
       isAudioAvailableForLocalUser,
       isVideoAvailableForLocalUser
@@ -119,6 +133,7 @@ export class GroupingService {
     });
 
     const privateTalkGroup: Group = {
+      id: GroupingService.nextGroupId++,
       userIds: this.privateTalk.userIds,
       isAudioAvailableForLocalUser: true,
       isVideoAvailableForLocalUser: false
@@ -131,6 +146,21 @@ export class GroupingService {
     return !!Object.values(this.gameMode.teams).filter((team: Team): boolean => {
       return team.userIds.has(this.localUser.id);
     }).length;
+  }
+
+  private sendBreakRoomIntoGroups(groups: Group[]): Promise<void> {
+    const copyGroups: {}[] = [];
+    groups.forEach((group: Group): void => {
+      const copyGroup: any = {...group};
+      copyGroup.userIds = [...group.userIds];
+
+      copyGroups.push(copyGroup);
+    });
+
+    return lastValueFrom(this.httpClient.post<void>(
+      `http://localhost:8090/audio-video/${this.classroom?.roomNumber}/audio-video-groups-changed`,
+      copyGroups
+    ));
   }
 
   private subtractSets<Type>(A: Set<Type>, B: Set<Type>): void {
@@ -156,6 +186,10 @@ export class GroupingService {
     this.store.select(GameModeState).subscribe((gameMode: GameMode): void => {
       this.gameMode = gameMode;
       this.updateGroups().then();
+    });
+
+    this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
+      this.classroom = classroom;
     });
   }
 }

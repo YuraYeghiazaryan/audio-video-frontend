@@ -1,12 +1,14 @@
 import {Injectable} from '@angular/core';
 import {Store} from "@ngxs/store";
 import {ClassroomAction} from "../state/classroom.state";
+import {GroupingService} from "./grouping.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class ClassroomService {
   public constructor(
+    private groupingService: GroupingService,
     private store: Store
   ) {
     this.listenStoreChanges();

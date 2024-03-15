@@ -185,9 +185,9 @@ export class ClassroomComponent implements OnInit, OnDestroy {
 
   public toggleTeamTalk(): void {
     if (this.gameMode.isTeamTalkStarted) {
-      this.gameModeService.startTeamTalk().then();
-    } else {
       this.gameModeService.endTeamTalk().then();
+    } else {
+      this.gameModeService.startTeamTalk().then();
     }
   }
 }
