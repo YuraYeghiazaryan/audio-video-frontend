@@ -1,18 +1,31 @@
 import {Injectable} from "@angular/core";
 import {User} from "../model/user";
-import {TeamId} from "../model/types";
-import {GameModeAction} from "../state/game-mode.state";
+import {TeamId, UserId} from "../model/types";
+import {GameMode, GameModeAction, GameModeState, Teams, TeamsDAO} from "../state/game-mode.state";
 import {Store} from "@ngxs/store";
+import {HttpClient} from "@angular/common/http";
+import {Classroom} from "../model/classroom";
+import {ClassroomState} from "../state/classroom.state";
+import {lastValueFrom} from "rxjs";
+import {Team} from "../model/team";
+import {LocalUser} from "../model/local-user";
+import {LocalUserState} from "../state/local-user.state";
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameModeService {
+  private classroom: Classroom = ClassroomState.defaults;
+  private gameMode: GameMode = GameModeState.defaults;
+  private localUser: LocalUser = LocalUserState.defaults;
 
   constructor(
-    private store: Store
-  ) {}
+    private store: Store,
+    private httpClient: HttpClient
+  ) {
+    this.listenStoreChanges();
+  }
 
   public createTeam(users: User[], teamId: TeamId, name: string, color: string): void {
     this.store.dispatch(new GameModeAction.CreateTeam(teamId, name, color));
@@ -28,12 +41,12 @@ export class GameModeService {
   }
 
   public addUsersToTeam(teamId: TeamId, users: User[]): void {
-    const userIds = users.map(user => user.id);
+    const userIds: UserId[] = users.map((user: User) => user.id);
     this.store.dispatch(new GameModeAction.AddUsersToTeam(teamId, userIds));
   }
 
   public removeUsersFromTeam(teamId: TeamId, users: User[]): void {
-    const userIds = users.map(user => user.id);
+    const userIds: UserId[] = users.map((user: User) => user.id);
     this.store.dispatch(new GameModeAction.RemoveUsersFromTeam(teamId, userIds));
   }
 
@@ -45,19 +58,85 @@ export class GameModeService {
     this.store.dispatch(new GameModeAction.DeleteAllTeams());
   }
 
-  public startGameMode(): void {
+  public async startGameMode(send: boolean = true): Promise<void> {
     this.store.dispatch(new GameModeAction.StartGameMode);
+
+    if (send) {
+      await lastValueFrom(this.httpClient.post<void>(
+        `http://localhost:8090/classroom/${this.classroom.roomNumber}/game-mode`,
+        {
+          started: true,
+          senderId: this.localUser.id,
+          teams: this.toTeamsDAO(this.gameMode.teams)
+        }
+      ));
+    }
   }
 
-  public endGameMode(): void {
+  public async endGameMode(send: boolean = true): Promise<void> {
     this.store.dispatch(new GameModeAction.EndGameMode);
+
+    if (send) {
+      await lastValueFrom(this.httpClient.post<void>(
+        `http://localhost:8090/classroom/${this.classroom.roomNumber}/game-mode`,
+        {
+          senderId: this.localUser.id,
+          started: false
+        }
+      ));
+    }
   }
 
-  public async startTeamTalk(): Promise<void> {
+  public async startTeamTalk(send: boolean = true): Promise<void> {
     this.store.dispatch(new GameModeAction.StartTeamTalk());
+
+    if (send) {
+      await lastValueFrom(this.httpClient.post<void>(
+        `http://localhost:8090/classroom/${this.classroom.roomNumber}/team-talk`,
+        {
+          senderId: this.localUser.id,
+          started: true
+        }
+      ));
+    }
   }
 
-  public async endTeamTalk(): Promise<void> {
+  public async endTeamTalk(send: boolean = true): Promise<void> {
     this.store.dispatch(new GameModeAction.EndTeamTalk());
+
+    if (send) {
+      await lastValueFrom(this.httpClient.post<void>(
+        `http://localhost:8090/classroom/${this.classroom.roomNumber}/team-talk`,
+        {
+          senderId: this.localUser.id,
+          started: false
+        }
+      ));
+    }
+  }
+
+  private toTeamsDAO(teams: Teams): TeamsDAO {
+    const teamsDAO: TeamsDAO = {};
+    Object.values(teams)
+      .forEach((team: Team): void => {
+        teamsDAO[team.id] = {
+          ...team,
+          userIds: [...team.userIds]
+        };
+      });
+
+    return teamsDAO;
+  }
+
+  private listenStoreChanges(): void {
+    this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
+      this.classroom = classroom;
+    });
+    this.store.select(GameModeState).subscribe((gameMode: GameMode): void => {
+      this.gameMode = gameMode;
+    });
+    this.store.select(LocalUserState).subscribe((localUser: LocalUser): void => {
+      this.localUser = localUser;
+    });
   }
 }

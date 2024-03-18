@@ -6,3 +6,10 @@ export interface Team {
   color: string;
   userIds: Set<UserId>;
 }
+
+export interface TeamDAO {
+  id: TeamId;
+  name: string;
+  color: string;
+  userIds: UserId[];
+}

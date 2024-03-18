@@ -1,11 +1,14 @@
 import {Action, State, StateContext} from "@ngxs/store";
 import {Injectable} from "@angular/core";
 import {TeamId, UserId} from "../model/types";
-import {Team} from "../model/team";
+import {Team, TeamDAO} from "../model/team";
 import produce from "immer";
 
 export interface Teams {
   [key: TeamId]: Team
+}
+export interface TeamsDAO {
+  [key: TeamId]: TeamDAO
 }
 
 export interface GameMode {
@@ -113,7 +116,7 @@ export class GameModeState {
   }
 
   @Action(GameModeAction.DeleteTeam)
-  public deleteTeam({setState}: StateContext<GameMode>, {teamId}: GameModeAction.CreateTeam): void {
+  public deleteTeam({setState}: StateContext<GameMode>, {teamId}: GameModeAction.DeleteTeam): void {
     setState(
       produce((state: GameMode): void => {
         delete state.teams[teamId];

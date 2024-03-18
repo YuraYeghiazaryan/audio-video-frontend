@@ -37,6 +37,7 @@ export class GroupingService {
   private static nextGroupId: number = 0;
 
   constructor(
+    private audioVideoService: AudioVideoService,
     private store: Store,
     private httpClient: HttpClient
   ) {
@@ -44,6 +45,10 @@ export class GroupingService {
   }
 
   private async updateGroups(): Promise<void> {
+    if (!this.gameMode.isTeamTalkStarted && !this.privateTalk.isStarted) {
+      return;
+    }
+
     const groups: Group[] = [];
     /* should be users set, which are not in any Team */
     const freeUserIds: Set<UserId> = new Set<UserId>(Object.keys(this.remoteUsers).map(parseInt)).add(this.localUser.id);
@@ -61,9 +66,7 @@ export class GroupingService {
       this.updateGroupsForPrivateTalk(groups);
     }
 
-    if (this.gameMode.isTeamTalkStarted || this.privateTalk.isStarted) {
-      await this.sendBreakRoomIntoGroups(groups);
-    }
+    await this.audioVideoService.breakRoomIntoGroups(groups);
   }
 
   /** update groups for students who are in Teams */

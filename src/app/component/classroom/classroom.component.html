@@ -9,7 +9,7 @@
 </button>
 
 <button (click)="createDemoTeams()">
-  Creations Teams demo
+  Create demo teams
 </button>
 
 <button (click)="toggleTeamTalk()">
@@ -18,11 +18,11 @@
 
 <div id="remote-users">
 
-  <ng-container *ngIf="gameMode.isStarted; then inGameMode else notInGameMode"></ng-container>
+  <ng-container *ngIf="gameMode.isStarted && gameMode.isTeamTalkStarted; then inTeamTalk else notInTeamTalk"></ng-container>
 
-  <ng-template #inGameMode>
+  <ng-template #inTeamTalk>
+    In team talk
     <ng-container *ngFor="let team of gameMode.teams | keyvalue">
-      In game mode
       <ng-container *ngIf="team.value.userIds.has(localUser.id)">
         <ng-container *ngFor="let userId of team.value.userIds">
           <app-remote-user *ngIf="remoteUsers[userId]" [remoteUser]="remoteUsers[userId]"></app-remote-user>
@@ -31,8 +31,8 @@
     </ng-container>
   </ng-template>
 
-  <ng-template #notInGameMode>
-    Not in game mode
+  <ng-template #notInTeamTalk>
+    Not in team talk
     <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | filterOnlineUsers)">
       <app-remote-user [remoteUser]="remoteUser"></app-remote-user>
     </div>

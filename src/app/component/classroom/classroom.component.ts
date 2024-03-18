@@ -180,7 +180,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
       this.gameModeService.createTeam(users, teamId, `team_${teamId}`, colors[teamId]);
       teamId++;
     });
-    this.gameModeService.startGameMode();
+    this.gameModeService.startGameMode().then();
   }
 
   public toggleTeamTalk(): void {

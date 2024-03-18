@@ -174,11 +174,15 @@ export class ChimeService extends AudioVideoService {
 
   public override async breakRoomIntoGroups(groups: Group[]): Promise<void> {
     this.meetingSubSessions = {};
-    this.leave();
 
-    for (let group of groups) {
-      const connectionOptions: ConnectionOptions = await this.getMainSessionConnectionOptions();
+    for (const group of groups) {
+      const connectionOptions: ConnectionOptions = await this.getSubSessionConnectionOptions(group.id);
       this.meetingSubSessions[group.id] = await this.createMeetingSession(connectionOptions, `subSessionLogger_${group.id}`);
+      this.meetingSubSessions[group.id].audioVideo.start();
+
+      if (!group.isAudioAvailableForLocalUser) {
+        this.meetingSubSessions[group.id].audioVideo.stopAudioInput().then();
+      }
     }
   }
 
