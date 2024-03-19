@@ -49,9 +49,11 @@ export class GroupingService {
       return;
     }
 
+    const remoteUsersIds: UserId[] = Object.keys(this.remoteUsers).map((id: string): UserId => parseInt(id));
+
     const groups: Group[] = [];
     /* should be users set, which are not in any Team */
-    const freeUserIds: Set<UserId> = new Set<UserId>(Object.keys(this.remoteUsers).map(parseInt)).add(this.localUser.id);
+    const freeUserIds: Set<UserId> = new Set<UserId>(remoteUsersIds).add(this.localUser.id);
     const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
 
     GroupingService.nextGroupId = 0;
@@ -149,21 +151,6 @@ export class GroupingService {
     return !!Object.values(this.gameMode.teams).filter((team: Team): boolean => {
       return team.userIds.has(this.localUser.id);
     }).length;
-  }
-
-  private sendBreakRoomIntoGroups(groups: Group[]): Promise<void> {
-    const copyGroups: {}[] = [];
-    groups.forEach((group: Group): void => {
-      const copyGroup: any = {...group};
-      copyGroup.userIds = [...group.userIds];
-
-      copyGroups.push(copyGroup);
-    });
-
-    return lastValueFrom(this.httpClient.post<void>(
-      `http://localhost:8090/audio-video/${this.classroom?.roomNumber}/audio-video-groups-changed`,
-      copyGroups
-    ));
   }
 
   private subtractSets<Type>(A: Set<Type>, B: Set<Type>): void {

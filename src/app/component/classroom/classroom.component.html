@@ -1,3 +1,7 @@
+<span *ngIf="localUserTeam && gameMode.isStarted"
+      [style]="{color: localUserTeam.color}">
+  {{ localUserTeam.name }}
+</span>
 <app-local-user></app-local-user>
 
 <button (click)="toggleVideo()" [disabled]="!joined">
@@ -8,31 +12,51 @@
   {{ this.localUser.audioVideoUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
 </button>
 
-<button (click)="createDemoTeams()">
-  Create demo teams
-</button>
+<ng-container *ngIf="localUser.role === Role.TEACHER">
+  <button (click)="createDemoTeams()">
+    Create demo teams
+  </button>
 
-<button (click)="toggleTeamTalk()">
-  {{ gameMode.isTeamTalkStarted ? 'End' : 'Start' }} team talk
-</button>
+  <button (click)="toggleTeamTalk()">
+    {{ gameMode.isTeamTalkStarted ? 'End' : 'Start' }} team talk
+  </button>
+</ng-container>
 
 <div id="remote-users">
 
-  <ng-container *ngIf="gameMode.isStarted && gameMode.isTeamTalkStarted; then inTeamTalk else notInTeamTalk"></ng-container>
+  <ng-container *ngIf="gameMode.isStarted; then inGameMode else notInGameMode"></ng-container>
 
-  <ng-template #inTeamTalk>
-    In team talk
+  <ng-template #inGameMode>
+    In game mode
     <ng-container *ngFor="let team of gameMode.teams | keyvalue">
-      <ng-container *ngIf="team.value.userIds.has(localUser.id)">
-        <ng-container *ngFor="let userId of team.value.userIds">
-          <app-remote-user *ngIf="remoteUsers[userId]" [remoteUser]="remoteUsers[userId]"></app-remote-user>
+      <ng-container *ngIf="gameMode.isTeamTalkStarted; then inTeamTalk else notInTeamTalk"></ng-container>
+
+      <ng-template #inTeamTalk>
+        <ng-container *ngIf="team.value.userIds.has(localUser.id)">
+          <br>
+          <span [style]="{color: team.value.color}">{{ team.value.name }}</span>
+          <div [style]="{'border-style': 'solid', 'border-color': team.value.color}">
+            <ng-container *ngFor="let userId of team.value.userIds">
+              <app-remote-user *ngIf="remoteUsers[userId]" [remoteUser]="remoteUsers[userId]"></app-remote-user>
+            </ng-container>
+          </div>
         </ng-container>
-      </ng-container>
+      </ng-template>
+
+      <ng-template #notInTeamTalk>
+        <br>
+        <span [style]="{color: team.value.color}">{{ team.value.name }}</span>
+        <div [style]="{'border-style': 'solid', 'border-color': team.value.color}">
+          <ng-container [style]="{'border-color': team.value.color}" *ngFor="let userId of team.value.userIds">
+            <app-remote-user *ngIf="remoteUsers[userId]" [remoteUser]="remoteUsers[userId]"></app-remote-user>
+          </ng-container>
+        </div>
+      </ng-template>
     </ng-container>
   </ng-template>
 
-  <ng-template #notInTeamTalk>
-    Not in team talk
+  <ng-template #notInGameMode>
+    Not in game mode
     <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | filterOnlineUsers)">
       <app-remote-user [remoteUser]="remoteUser"></app-remote-user>
     </div>

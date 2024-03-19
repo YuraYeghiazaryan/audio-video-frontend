@@ -176,6 +176,10 @@ export class ChimeService extends AudioVideoService {
     this.meetingSubSessions = {};
 
     for (const group of groups) {
+      if (group.userIds.has(this.localUser.id)) {
+        return;
+      }
+
       const connectionOptions: ConnectionOptions = await this.getSubSessionConnectionOptions(group.id);
       this.meetingSubSessions[group.id] = await this.createMeetingSession(connectionOptions, `subSessionLogger_${group.id}`);
       this.meetingSubSessions[group.id].audioVideo.start();

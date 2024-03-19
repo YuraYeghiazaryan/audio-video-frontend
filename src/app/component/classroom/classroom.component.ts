@@ -13,13 +13,14 @@ import {catchError, ObservableInput, throwError} from "rxjs";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {WebSocketService} from "../../service/web-socket.service";
 import {MessageHandleService} from "../../service/message-handle.service";
-import {RoomConnection, User} from "../../model/user";
+import {Role, RoomConnection, User} from "../../model/user";
 import {AudioVideoService} from "../../service/audio-video/audio-video.service";
 import {GameMode, GameModeState} from "../../state/game-mode.state";
 import {TeamId,} from "../../model/types";
 import {GameModeService} from "../../service/game-mode.service";
 import {RemoteUserComponent} from "./remote-users/remote-user/remote-user.component";
 import {LocalUserComponent} from "./remote-users/local-user/local-user.component";
+import {Team} from "../../model/team";
 
 @Component({
   selector: 'app-classroom',
@@ -41,7 +42,11 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   protected remoteUsers: RemoteUsers = RemoteUsersState.defaults;
   protected gameMode: GameMode = GameModeState.defaults;
 
+  protected localUserTeam: Team | undefined;
+
   protected joined: boolean = false;
+
+  protected readonly Role = Role;
 
   constructor(
     protected userService: UserService,
@@ -153,17 +158,22 @@ export class ClassroomComponent implements OnInit, OnDestroy {
 
     this.store.select(GameModeState).subscribe((gameMode: GameMode): void => {
       this.gameMode = gameMode;
+
+      if (this.gameMode.isStarted) {
+        this.localUserTeam = Object.values(this.gameMode.teams)
+          .find((team: Team): boolean => team.userIds.has(this.localUser.id));
+      }
     });
   }
 
   protected createDemoTeams(): void {
     const colors: any = {};
-    colors[0] = '#018499';
-    colors[1] = '#e8f149';
+    colors[0] = '#33ff00';
     colors[2] = '#ff2015';
-    colors[3] = '#00ff99';
     colors[4] = '#1100f2';
-    colors[5] = '#00ff00';
+    colors[5] = '#ee00ff';
+    colors[1] = '#ff8800';
+    colors[3] = '#00ff99';
 
     let teamId: TeamId = 0;
 
@@ -177,7 +187,13 @@ export class ClassroomComponent implements OnInit, OnDestroy {
 
       return result;
     }, []).forEach((users: User[]): void => {
-      this.gameModeService.createTeam(users, teamId, `team_${teamId}`, colors[teamId]);
+      const teamMembers: User[] = Object.assign([], users);
+
+      if (this.localUser.role === Role.TEACHER) {
+        teamMembers.push(this.localUser);
+      }
+
+      this.gameModeService.createTeam(teamMembers, teamId, `team_${teamId}`, colors[teamId]);
       teamId++;
     });
     this.gameModeService.startGameMode().then();
