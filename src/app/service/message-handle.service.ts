@@ -37,8 +37,6 @@ export class MessageHandleService {
     this.webSocketService.subscribe(`/topic/${roomNumber}/user-connection-state-changed`, this.userConnectionStateChanged.bind(this));
     this.webSocketService.subscribe(`/topic/${roomNumber}/user-video-state-changed`, this.userVideoStateChanged.bind(this));
 
-    this.webSocketService.subscribe(`/topic/${roomNumber}/audio-video-groups-changed`, this.audioVideoGroupsChanged.bind(this));
-
     this.webSocketService.subscribe(`/topic/${roomNumber}/game-mode`, this.gameModeStateChanged.bind(this));
     this.webSocketService.subscribe(`/topic/${roomNumber}/team-talk`, this.teamTalkStateChanged.bind(this));
   }
@@ -57,10 +55,6 @@ export class MessageHandleService {
   /** get new state from BE */
   private userConnectionStateChanged({userId, connected}: {userId: UserId, connected: boolean}): void {
     this.userEventHandleService.onUserConnectionChanged(userId, connected);
-  }
-
-  private audioVideoGroupsChanged(groups: Group[]): void {
-    this.audioVideoService.breakRoomIntoGroups(groups).then();
   }
 
   private gameModeStateChanged({started, senderId, teams}: { started: boolean, senderId: number, teams?: TeamsDAO }): void {
