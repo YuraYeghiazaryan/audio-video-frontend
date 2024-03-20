@@ -1,0 +1,12 @@
+<div *ngIf="localUser.audioVideoUser">
+  {{ localUser.role }} {{ localUser.username }} {{ localUser.id }}
+  <video #mediaWrapper width="200" height="122"></video>
+</div>
+
+<button (click)="toggleVideo()" [disabled]="!localUser.audioVideoUser?.joined">
+  {{ this.localUser.audioVideoUser?.isVideoOn ? 'Off Video' : 'On Video' }}
+</button>
+
+<button (click)="toggleAudio()" [disabled]="!localUser.audioVideoUser?.joined">
+  {{ this.localUser.audioVideoUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
+</button>

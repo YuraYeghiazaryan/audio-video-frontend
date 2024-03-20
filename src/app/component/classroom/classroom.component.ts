@@ -18,8 +18,8 @@ import {AudioVideoService} from "../../service/audio-video/audio-video.service";
 import {GameMode, GameModeState} from "../../state/game-mode.state";
 import {TeamId,} from "../../model/types";
 import {GameModeService} from "../../service/game-mode.service";
-import {RemoteUserComponent} from "./remote-users/remote-user/remote-user.component";
-import {LocalUserComponent} from "./remote-users/local-user/local-user.component";
+import {RemoteUserComponent} from "./users/remote-user/remote-user.component";
+import {LocalUserComponent} from "./users/local-user/local-user.component";
 import {Team} from "../../model/team";
 
 @Component({
@@ -43,8 +43,6 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   protected gameMode: GameMode = GameModeState.defaults;
 
   protected localUserTeam: Team | undefined;
-
-  protected joined: boolean = false;
 
   protected readonly Role = Role;
 
@@ -80,15 +78,10 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     });
 
     /* join to Zoom */
-    const zoomJoinPromise: Promise<void> = this.audioVideoService.init()
-      .then((): Promise<void> =>
-        this.audioVideoService.join()
-          .then((): void => {
-            this.joined = true;
-          })
-      );
+    const audioVideoJoinPromise: Promise<void> = this.audioVideoService.init()
+      .then((): Promise<void> => this.audioVideoService.join());
 
-    Promise.all([websocketConnectPromise, zoomJoinPromise])
+    Promise.all([websocketConnectPromise, audioVideoJoinPromise])
       .then((): void => {
         /* connected to VCR web socket and joined to Zoom */
         this.store.dispatch(new LocalUserAction.SetConnectionState(RoomConnection.ONLINE));
@@ -110,38 +103,6 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   public ngOnDestroy(): void {
     this.audioVideoService.leave();
   }
-
-  public toggleVideo(): void {
-    if (this.localUser.audioVideoUser?.isVideoOn) {
-      this.audioVideoService.stopLocalVideo().then((): void => {
-        this.httpClient.post<void>(
-          `http://localhost:8090/user/${this.classroom?.roomNumber}/user-video-state-changed`,
-          {
-            userId: this.localUser.id,
-            isOn: false
-          }
-        ).subscribe();
-      });
-    } else {
-      this.audioVideoService.startLocalVideo().then((): void => {
-        this.httpClient.post<void>(
-          `http://localhost:8090/user/${this.classroom?.roomNumber}/user-video-state-changed`,
-          {
-            userId: this.localUser.id,
-            isOn: true
-          }
-        ).subscribe();
-      });
-    }
-  };
-
-  public toggleAudio(): void {
-    if (this.localUser.audioVideoUser?.isAudioOn) {
-      this.audioVideoService.muteLocalAudio().then()
-    } else {
-      this.audioVideoService.unmuteLocalAudio().then()
-    }
-  };
 
   private listenStoreChanges(): void {
     this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {

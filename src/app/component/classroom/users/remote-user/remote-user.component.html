@@ -1,0 +1,20 @@
+<ng-container *ngIf="remoteUser">
+  {{ remoteUser.role }} {{ remoteUser.username }} {{ remoteUser.id }}
+  <video #mediaWrapper width="200" height="122"></video>
+
+  <ng-container *ngIf="localUser.role === Role.TEACHER">
+    <ng-container *ngIf="privateTalk.userIds.has(remoteUser.id); then inPrivateTalk else notInPrivateTalk"></ng-container>
+
+    <ng-template #notInPrivateTalk>
+      <button (click)="includeToPrivateTalk()">
+        Include to private talk
+      </button>
+    </ng-template>
+
+    <ng-template #inPrivateTalk>
+      <button (click)="excludeFromPrivateTalk()">
+        Exclude from private talk
+      </button>
+    </ng-template>
+  </ng-container>
+</ng-container>

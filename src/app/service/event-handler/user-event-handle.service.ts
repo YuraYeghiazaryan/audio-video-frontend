@@ -57,6 +57,13 @@ export class UserEventHandleService {
     }
   }
 
+  public onUserAudioStateChanged(userId: UserId, isOn: boolean): void {
+    const remoteUser: RemoteUser | undefined = this.remoteUsers[userId];
+    if (remoteUser) {
+      this.store.dispatch(new RemoteUsersAction.SetAudioState(remoteUser, isOn));
+    }
+  }
+
   private listenStoreChanges(): void {
     this.store.select(LocalUserState).subscribe((localUser: LocalUser): void => {
       this.localUser = localUser;

@@ -15,6 +15,11 @@ export namespace LocalUserAction {
     constructor(public audioVideoUser: AudioVideoUser) {}
   }
 
+  export class SetJoined {
+    public static readonly type: string = '[local-user] set joinned';
+    constructor(public joined: boolean) {}
+  }
+
   export class SetIsVideoOn {
     public static readonly type: string = '[local-user] set isVideoOn';
     constructor(public isVideoOn: boolean) {}
@@ -53,6 +58,18 @@ export class LocalUserState {
   @Action(LocalUserAction.SetAudioVideoUser)
   public setAudioVideoUser({patchState}: StateContext<LocalUser>, {audioVideoUser}: LocalUserAction.SetAudioVideoUser): void {
     patchState({audioVideoUser: audioVideoUser});
+  }
+
+  @Action(LocalUserAction.SetJoined)
+  public setJoined({setState}: StateContext<LocalUser>, {joined}: LocalUserAction.SetJoined): void {
+    setState(
+      produce((state: LocalUser): void => {
+        if (!state.audioVideoUser) {
+          throw Error('Can\'t set joined. Local user doesn\'t have audio-video user');
+        }
+        state.audioVideoUser.joined = joined;
+      })
+    );
   }
 
   @Action(LocalUserAction.SetIsVideoOn)

@@ -88,7 +88,9 @@ export class ZoomService extends AudioVideoService {
     }
 
     if (this.localUser.audioVideoUser.isVideoOn) {
-      this.startLocalVideo().then();
+      this.startLocalVideo()
+        .then((): void => console.log('local user video element changed'))
+        .catch((): void => console.log('local user video element not changed'));
     }
   }
   public override removeLocalUserVideoElement(): void {
@@ -145,14 +147,6 @@ export class ZoomService extends AudioVideoService {
     await this.stream.stopVideo();
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(false));
-
-    this.httpClient.post<void>(
-      `http://localhost:8090/user/${this.classroom?.roomNumber}/user-video-state-changed`,
-      {
-        userId: this.localUser.id,
-        isOn: false
-      }
-    ).subscribe();
   }
 
   public override async muteLocalAudio(): Promise<void> {
@@ -313,6 +307,7 @@ export class ZoomService extends AudioVideoService {
     /* initialize local zoom state */
     const audioVideoUser: AudioVideoUser = {
       id: localParticipant.userId + '',
+      joined: true,
       isVideoOn: localParticipant.bVideoOn,
       isAudioOn: localParticipant.muted || false,
     };

@@ -65,8 +65,8 @@ export class GameModeService {
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/game-mode`,
         {
-          started: true,
           senderId: this.localUser.id,
+          started: true,
           teams: this.toTeamsDAO(this.gameMode.teams)
         }
       ));
