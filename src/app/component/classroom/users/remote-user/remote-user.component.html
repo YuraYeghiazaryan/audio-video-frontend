@@ -1,8 +1,11 @@
 <ng-container *ngIf="remoteUser">
-  {{ remoteUser.role }} {{ remoteUser.username }} {{ remoteUser.id }}
+  <br>
   <video #mediaWrapper width="200" height="122"></video>
+  <br>
+  {{ remoteUser.role }} {{ remoteUser.username }} {{ remoteUser.id }}
+  <br>
 
-  <ng-container *ngIf="localUser.role === Role.TEACHER">
+  <ng-container *ngIf="localUser.role === Role.TEACHER && remoteUser.role === Role.STUDENT">
     <ng-container *ngIf="privateTalk.userIds.has(remoteUser.id); then inPrivateTalk else notInPrivateTalk"></ng-container>
 
     <ng-template #notInPrivateTalk>

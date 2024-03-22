@@ -10,10 +10,9 @@ import {RoomConnection} from "../model/user";
 })
 export class FilterOnlineUsersPipe implements PipeTransform {
 
-  public transform(remoteUsers: RemoteUsers): RemoteUser[] {
-    return Object.values(remoteUsers)
-      .filter((remoteUser: RemoteUser): boolean => {
-        return remoteUser.roomConnection === RoomConnection.ONLINE;
-      });
+  public transform(remoteUsers: RemoteUser[]): RemoteUser[] {
+    return remoteUsers.filter((remoteUser: RemoteUser): boolean =>
+      remoteUser.roomConnection === RoomConnection.ONLINE
+    );
   }
 }

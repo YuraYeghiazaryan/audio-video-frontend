@@ -21,6 +21,7 @@ import {GameModeService} from "../../service/game-mode.service";
 import {RemoteUserComponent} from "./users/remote-user/remote-user.component";
 import {LocalUserComponent} from "./users/local-user/local-user.component";
 import {Team} from "../../model/team";
+import {RolesPipe} from "../../pipe/roles.pipe";
 
 @Component({
   selector: 'app-classroom',
@@ -31,7 +32,8 @@ import {Team} from "../../model/team";
     NgIf,
     KeyValuePipe,
     RemoteUserComponent,
-    LocalUserComponent
+    LocalUserComponent,
+    RolesPipe
   ],
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.css'
@@ -42,7 +44,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   protected remoteUsers: RemoteUsers = RemoteUsersState.defaults;
   protected gameMode: GameMode = GameModeState.defaults;
 
-  protected localUserTeam: Team | undefined;
+  protected localUserTeams: Team[] = [];
 
   protected readonly Role = Role;
 
@@ -121,8 +123,8 @@ export class ClassroomComponent implements OnInit, OnDestroy {
       this.gameMode = gameMode;
 
       if (this.gameMode.isStarted) {
-        this.localUserTeam = Object.values(this.gameMode.teams)
-          .find((team: Team): boolean => team.userIds.has(this.localUser.id));
+        this.localUserTeams = Object.values(this.gameMode.teams)
+          .filter((team: Team): boolean => team.userIds.has(this.localUser.id));
       }
     });
   }
@@ -141,18 +143,22 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     const users: User[] = Object.values(this.remoteUsers);
     users.push(this.localUser);
 
-    users.reduce((result: User[][], value: User, index: number, array: User[]): User[][] => {
+    const teachers: User[] = users.filter((user: User): boolean => user.role === Role.TEACHER);
+    const students: User[] = users.filter((user: User): boolean => user.role === Role.STUDENT);
+
+    students.reduce((result: User[][], value: User, index: number, array: User[]): User[][] => {
       if (index % 2 === 0) {
         result.push(array.slice(index, index + 2));
       }
 
       return result;
     }, []).forEach((users: User[]): void => {
-      const teamMembers: User[] = Object.assign([], users);
-
-      if (this.localUser.role === Role.TEACHER) {
-        teamMembers.push(this.localUser);
+      if (users.length === 0) {
+        return;
       }
+
+      const teamMembers: User[] = Object.assign([], users);
+      teamMembers.push(...teachers);
 
       this.gameModeService.createTeam(teamMembers, teamId, `team_${teamId}`, colors[teamId]);
       teamId++;
