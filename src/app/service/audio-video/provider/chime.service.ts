@@ -32,7 +32,7 @@ interface VideoTile1 {
 }
 interface Meeting {
   session: DefaultMeetingSession,
-  audioElement: HTMLAudioElement
+  audioElement?: HTMLAudioElement
 }
 
 @Injectable({
@@ -194,6 +194,7 @@ export class ChimeService extends AudioVideoService {
   public override async breakRoomIntoGroups(groups: Group[]): Promise<void> {
     Object.values(this.subMeetings)
       .forEach((meeting: Meeting): void => {
+        meeting.audioElement?.remove();
         meeting.session.audioVideo.stop();
         meeting.session.destroy();
       });
@@ -208,7 +209,7 @@ export class ChimeService extends AudioVideoService {
       }
 
       const connectionOptions: ConnectionOptions = await this.getSubSessionConnectionOptions(group.id);
-      this.subMeetings[group.id] = await this.createMeetingSession(connectionOptions, `subSessionLogger_${group.id}`);
+      this.subMeetings[group.id] = await this.createMeetingSession(connectionOptions, `subSessionLogger_${group.id}`, group.isAudioAvailableForLocalUser);
       this.subMeetings[group.id].session.audioVideo.start();
 
       if (this.localUser.audioVideoUser?.isVideoOn) {
@@ -217,10 +218,6 @@ export class ChimeService extends AudioVideoService {
 
       if (this.localUser.audioVideoUser?.isAudioOn) {
         this.subMeetings[group.id].session.audioVideo.realtimeUnmuteLocalAudio();
-      }
-
-      if (!group.isAudioAvailableForLocalUser) {
-        this.subMeetings[group.id].audioElement.pause();
       }
     }
   }
@@ -246,7 +243,7 @@ export class ChimeService extends AudioVideoService {
     remoteUserVideoTile.htmlElement.srcObject = null;
   }
 
-  private async createMeetingSession(connectionOptions: ConnectionOptions, loggerName: string): Promise<Meeting> {
+  private async createMeetingSession(connectionOptions: ConnectionOptions, loggerName: string, isAudioOn: boolean = true): Promise<Meeting> {
     const logger: ConsoleLogger = new ConsoleLogger(loggerName, LogLevel.INFO);
     const deviceController: DefaultDeviceController = new DefaultDeviceController(logger, {enableWebAudio: true});
 
@@ -296,13 +293,13 @@ export class ChimeService extends AudioVideoService {
       await meetingSession.audioVideo.startVideoInput(videoInputDeviceInfo.deviceId);
     }
 
-    const audioElement: HTMLAudioElement = document.createElement('audio');
-    audioElement.id = meetingResponse?.meeting?.externalMeetingId;
-    audioElement.remove();
+    let audioElement: HTMLAudioElement | undefined = undefined;
 
-    document.body.appendChild(audioElement);
-
-    await meetingSession.audioVideo.bindAudioElement(audioElement);
+    if (isAudioOn) {
+      audioElement = document.createElement('audio')
+      document.body.appendChild(audioElement);
+      await meetingSession.audioVideo.bindAudioElement(audioElement);
+    }
 
     meetingSession.audioVideo.realtimeSubscribeToAttendeeIdPresence((presentAttendeeId: string, present: boolean): void => {
       console.log(`Attendee ID: ${presentAttendeeId} Present: ${present}`);
