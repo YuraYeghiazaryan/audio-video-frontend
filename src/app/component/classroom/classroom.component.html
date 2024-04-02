@@ -1,16 +1,13 @@
-<span *ngIf="localUserTeam && gameMode.isStarted"
-      [style]="{color: localUserTeam.color}">
-  {{ localUserTeam.name }}
-</span>
+<ng-container *ngFor="let teacher of remoteUsers | roles: Role.TEACHER">
+  <app-remote-user *ngIf="teacher.id !== localUser.id" [remoteUser]="teacher"></app-remote-user>
+</ng-container>
+
+<ng-container *ngIf="gameMode.isStarted && localUser.role === Role.STUDENT">
+  <span *ngFor="let team of localUserTeams" [style]="{color: team.color}">
+    {{ team.name }}
+  </span>
+</ng-container>
 <app-local-user></app-local-user>
-
-<button (click)="toggleVideo()" [disabled]="!joined">
-  {{ this.localUser.audioVideoUser?.isVideoOn ? 'Off Video' : 'On Video' }}
-</button>
-
-<button (click)="toggleAudio()" [disabled]="!joined">
-  {{ this.localUser.audioVideoUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
-</button>
 
 <ng-container *ngIf="localUser.role === Role.TEACHER">
   <button (click)="createDemoTeams()">
@@ -37,7 +34,7 @@
           <span [style]="{color: team.value.color}">{{ team.value.name }}</span>
           <div [style]="{'border-style': 'solid', 'border-color': team.value.color}">
             <ng-container *ngFor="let userId of team.value.userIds">
-              <app-remote-user *ngIf="remoteUsers[userId]" [remoteUser]="remoteUsers[userId]"></app-remote-user>
+              <app-remote-user *ngIf="remoteUsers[userId]?.role === Role.STUDENT" [remoteUser]="remoteUsers[userId]"></app-remote-user>
             </ng-container>
           </div>
         </ng-container>
@@ -48,7 +45,7 @@
         <span [style]="{color: team.value.color}">{{ team.value.name }}</span>
         <div [style]="{'border-style': 'solid', 'border-color': team.value.color}">
           <ng-container [style]="{'border-color': team.value.color}" *ngFor="let userId of team.value.userIds">
-            <app-remote-user *ngIf="remoteUsers[userId]" [remoteUser]="remoteUsers[userId]"></app-remote-user>
+            <app-remote-user *ngIf="remoteUsers[userId]?.role === Role.STUDENT" [remoteUser]="remoteUsers[userId]"></app-remote-user>
           </ng-container>
         </div>
       </ng-template>
@@ -57,7 +54,7 @@
 
   <ng-template #notInGameMode>
     Not in game mode
-    <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | filterOnlineUsers)">
+    <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | roles: Role.STUDENT | filterOnlineUsers)">
       <app-remote-user [remoteUser]="remoteUser"></app-remote-user>
     </div>
   </ng-template>

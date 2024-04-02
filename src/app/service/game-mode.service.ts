@@ -10,6 +10,7 @@ import {lastValueFrom} from "rxjs";
 import {Team} from "../model/team";
 import {LocalUser} from "../model/local-user";
 import {LocalUserState} from "../state/local-user.state";
+import {GroupingService} from "./grouping.service";
 
 
 @Injectable({
@@ -21,6 +22,7 @@ export class GameModeService {
   private localUser: LocalUser = LocalUserState.defaults;
 
   constructor(
+    private groupingService: GroupingService,
     private store: Store,
     private httpClient: HttpClient
   ) {
@@ -62,21 +64,25 @@ export class GameModeService {
     this.store.dispatch(new GameModeAction.StartGameMode);
 
     if (send) {
+      await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/game-mode`,
         {
-          started: true,
           senderId: this.localUser.id,
+          started: true,
           teams: this.toTeamsDAO(this.gameMode.teams)
         }
       ));
     }
+
+    await this.groupingService.updateGroups();
   }
 
   public async endGameMode(send: boolean = true): Promise<void> {
     this.store.dispatch(new GameModeAction.EndGameMode);
 
     if (send) {
+      await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/game-mode`,
         {
@@ -85,12 +91,15 @@ export class GameModeService {
         }
       ));
     }
+
+    await this.groupingService.updateGroups();
   }
 
   public async startTeamTalk(send: boolean = true): Promise<void> {
     this.store.dispatch(new GameModeAction.StartTeamTalk());
 
     if (send) {
+      await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/team-talk`,
         {
@@ -99,12 +108,15 @@ export class GameModeService {
         }
       ));
     }
+
+    await this.groupingService.updateGroups();
   }
 
   public async endTeamTalk(send: boolean = true): Promise<void> {
     this.store.dispatch(new GameModeAction.EndTeamTalk());
 
     if (send) {
+      await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/team-talk`,
         {
@@ -113,6 +125,8 @@ export class GameModeService {
         }
       ));
     }
+
+    await this.groupingService.updateGroups();
   }
 
   private toTeamsDAO(teams: Teams): TeamsDAO {

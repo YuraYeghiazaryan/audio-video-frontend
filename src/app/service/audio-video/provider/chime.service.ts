@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {AudioVideoService} from "../audio-video.service";
-import {Group} from "../../grouping.service";
+import {Group, Groups} from "../../grouping.service";
 import {AudioVideoUserId, UserId} from "../../../model/types";
 import {
   ConsoleLogger,
@@ -24,10 +24,21 @@ import {Store} from "@ngxs/store";
 import {RemoteUser} from "../../../model/remote-user";
 import {AudioVideoUser} from "../../../model/user";
 
-interface VideoTile1 {
+/* @TODO RENAME*/
+interface VideoTile {
   id?: number;
   mediaStream?: MediaStream;
   htmlElement?: HTMLVideoElement;
+}
+interface Meeting {
+  session: DefaultMeetingSession,
+  audioElement?: HTMLAudioElement
+}
+
+interface Meetings {
+  main?: Meeting,
+  teamTalk?: Meeting[],
+  privateTalk?: Meeting,
 }
 
 @Injectable({
@@ -38,12 +49,12 @@ export class ChimeService extends AudioVideoService {
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
 
-  private meetingSubSessions: {[key: number]: DefaultMeetingSession} = {};
+  // private mainMeeting: Meeting | undefined;
+  private subMeetings: {[key: number]: Meeting} = {};
+  private meetings: Meetings = {}
 
-  private meetingMainSession: DefaultMeetingSession | undefined;
-
-  private localUserVideoTile: VideoTile1 | undefined = undefined;
-  private remoteUserVideoTiles: {[key: AudioVideoUserId]: VideoTile1} = {};
+  private localUserVideoTile: VideoTile | undefined = undefined;
+  private remoteUserVideoTiles: {[key: AudioVideoUserId]: VideoTile} = {};
 
   constructor(
     private httpClient: HttpClient,
@@ -55,35 +66,33 @@ export class ChimeService extends AudioVideoService {
 
   public override async init(): Promise<void> {
     const connectionOptions: ConnectionOptions = await this.getMainSessionConnectionOptions();
-    this.meetingMainSession = await this.createMeetingSession(connectionOptions, 'mainSessionLogger');
+    // this.mainMeeting = await this.createMeetingSession(connectionOptions, 'mainSessionLogger');
+    this.meetings.main = await this.createMeetingSession(connectionOptions, 'mainSessionLogger');
   }
 
   public async join(): Promise<void> {
-    if (!this.meetingMainSession) {
+    if (!this.meetings.main) {
       return Promise.reject();
     }
 
-    this.meetingMainSession.audioVideo.start();
+    this.meetings.main.session.audioVideo.start();
 
     /* initialize local zoom state */
     const audioVideoUser: AudioVideoUser = {
-      id: this.meetingMainSession.configuration.credentials?.attendeeId + '',
+      id: this.meetings.main.session.configuration.credentials?.externalUserId + '',
+      joined: true,
       isVideoOn: false,
       isAudioOn: false,
     };
 
     this.store.dispatch(new LocalUserAction.SetAudioVideoUser(audioVideoUser));
-
-    // this.connectionHandleService.audioVideoConnectionChanged(true);
   }
   public leave(): void {
-    if (!this.meetingMainSession) {
+    if (!this.meetings.main) {
       return;
     }
 
-    this.meetingMainSession.audioVideo.stop();
-
-    // this.connectionHandleService.audioVideoConnectionChanged(false);
+    this.meetings.main.session.audioVideo.stop();
   }
 
 
@@ -134,64 +143,109 @@ export class ChimeService extends AudioVideoService {
   }
 
   public override async startLocalVideo(): Promise<void> {
-    if (!this.meetingMainSession) {
-      return;
+    if (this.meetings.main?.session.audioVideo) {
+      this.meetings.main.session.audioVideo.startLocalVideoTile();
     }
 
-    this.meetingMainSession.audioVideo.startLocalVideoTile();
+    Object.values(this.subMeetings)
+      .forEach((meeting: Meeting): void => {
+        meeting.session.audioVideo.startLocalVideoTile();
+      });
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(true));
   }
 
   public override async stopLocalVideo(): Promise<void> {
-    if (!this.meetingMainSession) {
-      return;
+    if (this.meetings.main?.session.audioVideo) {
+      this.meetings.main.session.audioVideo.stopLocalVideoTile();
     }
 
-    this.meetingMainSession.audioVideo.stopLocalVideoTile();
+    Object.values(this.subMeetings)
+      .forEach((meeting: Meeting): void => {
+        meeting.session.audioVideo.stopLocalVideoTile();
+      });
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(false));
   }
 
   public override async unmuteLocalAudio(): Promise<void> {
-    if (!this.meetingMainSession) {
-      return;
+    if (this.meetings.main?.session.audioVideo) {
+      this.meetings.main.session.audioVideo.realtimeUnmuteLocalAudio();
     }
 
-    this.meetingMainSession.audioVideo.realtimeUnmuteLocalAudio();
+    Object.values(this.subMeetings)
+      .forEach((meeting: Meeting): void => {
+        meeting.session.audioVideo.realtimeUnmuteLocalAudio();
+      });
 
     this.store.dispatch(new LocalUserAction.SetIsAudioOn(true));
   }
 
   public override async muteLocalAudio(): Promise<void> {
-    if (!this.meetingMainSession) {
-      return;
+    if (this.meetings.main?.session.audioVideo) {
+      this.meetings.main.session.audioVideo.realtimeMuteLocalAudio();
     }
-    this.meetingMainSession.audioVideo.realtimeMuteLocalAudio();
+
+    Object.values(this.subMeetings)
+      .forEach((meeting: Meeting): void => {
+        meeting.session.audioVideo.realtimeMuteLocalAudio();
+      });
 
     this.store.dispatch(new LocalUserAction.SetIsAudioOn(false));
   }
 
-  public override async breakRoomIntoGroups(groups: Group[]): Promise<void> {
-    this.meetingSubSessions = {};
+  public override async breakRoomIntoGroups(groups: Groups): Promise<void> {
+    this.meetings.teamTalk?.forEach((meeting: Meeting): void => {
+        meeting.session.audioVideo.stop();
+        meeting.session.destroy();
+        meeting.audioElement?.remove();
+      });
+    this.meetings.teamTalk = [];
 
-    for (const group of groups) {
-      if (group.userIds.has(this.localUser.id)) {
-        return;
+    this.meetings.main?.session?.audioVideo?.stop();
+    this.meetings.main?.session?.destroy();
+
+    this.meetings.privateTalk?.session?.audioVideo?.stop();
+    this.meetings.privateTalk?.session?.destroy();
+
+    const allGroups: Group[] = [];
+    if (groups.main) {
+      allGroups.push(groups.main);
+    }
+    if (groups.teamTalk) {
+      allGroups.push(...groups.teamTalk);
+    }
+    if (groups.privateTalk) {
+      allGroups.push(groups.privateTalk);
+    }
+
+    for (const group of allGroups) {
+      if (!group.userIds.has(this.localUser.id)) {
+        continue;
       }
 
-      const connectionOptions: ConnectionOptions = await this.getSubSessionConnectionOptions(group.id);
-      this.meetingSubSessions[group.id] = await this.createMeetingSession(connectionOptions, `subSessionLogger_${group.id}`);
-      this.meetingSubSessions[group.id].audioVideo.start();
-
-      if (!group.isAudioAvailableForLocalUser) {
-        this.meetingSubSessions[group.id].audioVideo.stopAudioInput().then();
-      }
+      await this.createMeetingFromGroup(group);
     }
   }
 
+  private async createMeetingFromGroup(group: Group): Promise<Meeting> {
+    const connectionOptions: ConnectionOptions = await this.getSubSessionConnectionOptions(group.id);
+    this.subMeetings[group.id] = await this.createMeetingSession(connectionOptions, `subSessionLogger_${group.id}`, group.isAudioAvailableForLocalUser);
+    this.subMeetings[group.id].session.audioVideo.start();
+
+    if (this.localUser.audioVideoUser?.isVideoOn) {
+      this.subMeetings[group.id].session.audioVideo.startLocalVideoTile();
+    }
+
+    if (this.localUser.audioVideoUser?.isAudioOn) {
+      this.subMeetings[group.id].session.audioVideo.realtimeUnmuteLocalAudio();
+    }
+
+    return this.subMeetings[group.id];
+  }
+
   private async startRemoteVideo(userId: AudioVideoUserId): Promise<void> {
-    const remoteUserVideoTile: VideoTile1 | null = this.remoteUserVideoTiles[userId];
+    const remoteUserVideoTile: VideoTile | null = this.remoteUserVideoTiles[userId];
 
     if (!remoteUserVideoTile?.htmlElement || !remoteUserVideoTile?.mediaStream) {
       return;
@@ -202,7 +256,7 @@ export class ChimeService extends AudioVideoService {
   }
 
   private async stopRemoteVideo(userId: AudioVideoUserId): Promise<void> {
-    const remoteUserVideoTile: VideoTile1 | null = this.remoteUserVideoTiles[userId];
+    const remoteUserVideoTile: VideoTile | null = this.remoteUserVideoTiles[userId];
     if (!remoteUserVideoTile.htmlElement) {
       return;
     }
@@ -211,67 +265,71 @@ export class ChimeService extends AudioVideoService {
     remoteUserVideoTile.htmlElement.srcObject = null;
   }
 
-  private async createMeetingSession(connectionOptions: ConnectionOptions, loggerName: string): Promise<DefaultMeetingSession> {
+  private async createMeetingSession(connectionOptions: ConnectionOptions, loggerName: string, isAudioOn: boolean = true): Promise<Meeting> {
     const logger: ConsoleLogger = new ConsoleLogger(loggerName, LogLevel.INFO);
     const deviceController: DefaultDeviceController = new DefaultDeviceController(logger, {enableWebAudio: true});
 
-    const meetingResponse: any = connectionOptions.meeting;
-    const attendeeResponse: any = connectionOptions.attendee;
+    const meetingResponse: any = connectionOptions.createMeetingResult;
+    const attendeeResponse: any = connectionOptions.createAttendeeResult;
 
     const configuration: MeetingSessionConfiguration = new MeetingSessionConfiguration(meetingResponse, attendeeResponse);
 
-    const meetingMainSession: DefaultMeetingSession = new DefaultMeetingSession(
+    const meetingSession: DefaultMeetingSession = new DefaultMeetingSession(
       configuration,
       logger,
       deviceController
     );
 
-    const audioInputDevices: MediaDeviceInfo[] = await meetingMainSession.audioVideo.listAudioInputDevices();
-    const audioOutputDevices: MediaDeviceInfo[] = await meetingMainSession.audioVideo.listAudioOutputDevices();
-    const videoInputDevices: MediaDeviceInfo[] = await meetingMainSession.audioVideo.listVideoInputDevices();
+    const audioInputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listAudioInputDevices();
+    const audioOutputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listAudioOutputDevices();
+    const videoInputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listVideoInputDevices();
 
-    const audioInputDeviceInfo: MediaDeviceInfo = audioInputDevices[0];
-    if (audioInputDeviceInfo) {
+    const mediaDeviceInfo: MediaDeviceInfo = audioInputDevices[0];
+    meetingSession.audioVideo.realtimeMuteLocalAudio();
+
+    if (mediaDeviceInfo) {
+      let voiceFocusTransformDevice: VoiceFocusTransformDevice | undefined = undefined;
+
       if (await VoiceFocusDeviceTransformer.isSupported()) {
         try {
           const voiceFocusDeviceTransformer: VoiceFocusDeviceTransformer = await VoiceFocusDeviceTransformer.create({variant: 'auto'});
-          const voiceFocusTransformDevice: VoiceFocusTransformDevice | undefined = await voiceFocusDeviceTransformer.createTransformDevice(audioInputDeviceInfo.deviceId);
-
-          if (voiceFocusTransformDevice) {
-            await meetingMainSession.audioVideo.startAudioInput(voiceFocusTransformDevice);
-          } else {
-            await meetingMainSession.audioVideo.startAudioInput(audioInputDeviceInfo.deviceId);
-          }
-        } catch (cause) {
-          meetingMainSession?.audioVideo?.startAudioInput(audioInputDeviceInfo.deviceId);
-          throw "VoiceFocus is not supported";
-        }
+          voiceFocusTransformDevice = await voiceFocusDeviceTransformer.createTransformDevice(mediaDeviceInfo.deviceId);
+        } catch (cause) {}
       }
-      await this.muteLocalAudio();
+
+      if (voiceFocusTransformDevice) {
+        await meetingSession.audioVideo.startAudioInput(voiceFocusTransformDevice);
+      } else {
+        console.warn('Voice focus is not supported')
+        await meetingSession.audioVideo.startAudioInput(mediaDeviceInfo.deviceId);
+      }
     }
 
     const audioOutputDeviceInfo: MediaDeviceInfo = audioOutputDevices[0];
     if (audioOutputDeviceInfo) {
-      await meetingMainSession.audioVideo.chooseAudioOutput(audioOutputDeviceInfo.deviceId);
+      await meetingSession.audioVideo.chooseAudioOutput(audioOutputDeviceInfo.deviceId);
     }
 
     const videoInputDeviceInfo: MediaDeviceInfo = videoInputDevices[0];
     if (videoInputDeviceInfo) {
-      await meetingMainSession.audioVideo.startVideoInput(videoInputDeviceInfo.deviceId);
+      await meetingSession.audioVideo.startVideoInput(videoInputDeviceInfo.deviceId);
     }
 
-    const audioElement: HTMLAudioElement = document.createElement('audio');
-    document.body.appendChild(audioElement);
+    let audioElement: HTMLAudioElement | undefined = undefined;
 
-    await meetingMainSession.audioVideo.bindAudioElement(audioElement);
+    if (isAudioOn) {
+      audioElement = document.createElement('audio')
+      document.body.appendChild(audioElement);
+      await meetingSession.audioVideo.bindAudioElement(audioElement);
+    }
 
-    meetingMainSession.audioVideo.realtimeSubscribeToAttendeeIdPresence((presentAttendeeId: string, present: boolean): void => {
+    meetingSession.audioVideo.realtimeSubscribeToAttendeeIdPresence((presentAttendeeId: string, present: boolean): void => {
       console.log(`Attendee ID: ${presentAttendeeId} Present: ${present}`);
     });
 
-    meetingMainSession.audioVideo.addObserver({
+    meetingSession.audioVideo.addObserver({
       videoTileDidUpdate: (tileState: VideoTileState): void => {
-        if (!meetingMainSession?.audioVideo) {
+        if (!meetingSession?.audioVideo) {
           throw Error();
         }
 
@@ -284,24 +342,27 @@ export class ChimeService extends AudioVideoService {
             throw Error();
           }
 
-          meetingMainSession.audioVideo.bindVideoElement(tileState.tileId, this.localUserVideoTile.htmlElement);
+          meetingSession.audioVideo.bindVideoElement(tileState.tileId, this.localUserVideoTile.htmlElement);
         } else {
-          const remoteUserVideoElement: VideoTile1 | null = this.remoteUserVideoTiles[tileState.boundAttendeeId];
+          const remoteUserVideoTile: VideoTile | null = this.remoteUserVideoTiles[tileState.boundExternalUserId];
 
-          if (!remoteUserVideoElement) {
+          if (!remoteUserVideoTile) {
             throw Error();
           }
 
           if (tileState.boundVideoStream) {
-            remoteUserVideoElement.mediaStream = tileState.boundVideoStream;
+            remoteUserVideoTile.mediaStream = tileState.boundVideoStream;
           }
 
-          this.startRemoteVideo(tileState.boundAttendeeId);
+          this.startRemoteVideo(tileState.boundExternalUserId);
         }
       }
     });
 
-    return meetingMainSession;
+    return {
+      session: meetingSession,
+      audioElement: audioElement
+    };
   }
 
   private getMainSessionConnectionOptions(): Promise<ConnectionOptions> {

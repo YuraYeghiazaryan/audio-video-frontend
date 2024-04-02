@@ -1,7 +1,6 @@
 import {Injectable} from "@angular/core";
 import {Role} from "../model/user";
 import {UserId} from "../model/types";
-import {AudioVideoService} from "./audio-video/audio-video.service";
 import {LocalUser} from "../model/local-user";
 import {LocalUserState} from "../state/local-user.state";
 import {Store} from "@ngxs/store";
@@ -9,11 +8,12 @@ import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
 import {PrivateTalk, PrivateTalkState} from "../state/private-talk.state";
 import {GameMode, GameModeState} from "../state/game-mode.state";
 import {Team} from "../model/team";
-import {HttpClient} from "@angular/common/http";
-import {Classroom} from "../model/classroom";
-import {ClassroomState} from "../state/classroom.state";
 import {lastValueFrom} from "rxjs";
-
+import {ClassroomState} from "../state/classroom.state";
+import {Classroom} from "../model/classroom";
+import {AudioVideoService} from "./audio-video/audio-video.service";
+import {HttpClient} from "@angular/common/http";
+import produce from "immer";
 
 export interface Group {
   id: number;
@@ -22,6 +22,11 @@ export interface Group {
   isVideoAvailableForLocalUser: boolean;
 }
 
+export interface Groups {
+  main?: Group,
+  teamTalk?: Group[],
+  privateTalk?: Group,
+}
 
 @Injectable({
   providedIn: 'root'
@@ -38,20 +43,20 @@ export class GroupingService {
 
   constructor(
     private audioVideoService: AudioVideoService,
-    private store: Store,
-    private httpClient: HttpClient
+    private httpClient: HttpClient,
+    private store: Store
   ) {
     this.listenStoreChanges();
   }
 
-  private async updateGroups(): Promise<void> {
+  public getGroups(): Groups {
     if (!this.gameMode.isTeamTalkStarted && !this.privateTalk.isStarted) {
-      return;
+      return {};
     }
 
     const remoteUsersIds: UserId[] = Object.keys(this.remoteUsers).map((id: string): UserId => parseInt(id));
 
-    const groups: Group[] = [];
+    const groups: Groups = {};
     /* should be users set, which are not in any Team */
     const freeUserIds: Set<UserId> = new Set<UserId>(remoteUsersIds).add(this.localUser.id);
     const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
@@ -68,12 +73,55 @@ export class GroupingService {
       this.updateGroupsForPrivateTalk(groups);
     }
 
-    await this.audioVideoService.breakRoomIntoGroups(groups);
+    return groups;
+  }
+
+  public async breakRoomIntoGroups(send: boolean = true): Promise<void> {
+    if (!this.privateTalk.isStarted && !this.gameMode.isTeamTalkStarted) {
+      return;
+    }
+
+    const groups: Groups = this.getGroups();
+    const groupsCopy: any = {};
+
+    groupsCopy.main = groups.main;
+    groupsCopy.privateTalk = groups.privateTalk;
+    groupsCopy.teamTalk = groups.teamTalk;
+
+    if (groupsCopy.main) {
+      groupsCopy.main.userIds = Array.from(groupsCopy.main.userIds);
+    }
+    if (groupsCopy.privateTalk) {
+      groupsCopy.privateTalk.userIds = Array.from(groupsCopy.privateTalk.userIds);
+    }
+    if (groupsCopy.teamTalk) {
+      groupsCopy.teamTalk.forEach((group: any): void => {
+        group.userIds = Array.from(group.userIds);
+      });
+    }
+
+    if (send) {
+      await lastValueFrom(this.httpClient.post<void>(
+        `http://localhost:8090/audio-video/${this.classroom.roomNumber}/break-room-into-groups`,
+        {
+          senderId: this.localUser.id,
+          groups: groupsCopy
+        }
+      ));
+    }
+  }
+
+  public async updateGroups(): Promise<void> {
+    if (!this.privateTalk.isStarted && !this.gameMode.isTeamTalkStarted) {
+      return;
+    }
+
+    await this.audioVideoService.breakRoomIntoGroups(this.getGroups());
   }
 
   /** update groups for students who are in Teams */
-  private updateGroupsForTeamTalk(groups: Group[], freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
-    const gameModeGroups: Group[] = Object.values(this.gameMode.teams).map((team: Team): Group => {
+  private updateGroupsForTeamTalk(groups: Groups, freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
+    groups.teamTalk = Object.values(this.gameMode.teams).map((team: Team): Group => {
       /* remove from the freeUsers group those users who are already in other Teams */
       this.subtractSets(freeUserIds, team.userIds);
 
@@ -93,19 +141,17 @@ export class GroupingService {
         throw Error();
       }
 
-      return  {
+      return {
         id: GroupingService.nextGroupId++,
         userIds: team.userIds,
         isAudioAvailableForLocalUser,
         isVideoAvailableForLocalUser
       };
     });
-
-    groups.push(...gameModeGroups);
   }
 
   /** update groups for students who are not in any Team */
-  private updateGroupsForFreeUsers(groups: Group[], freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
+  private updateGroupsForFreeUsers(groups: Groups, freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
     let isAudioAvailableForLocalUser: boolean = false;
     let isVideoAvailableForLocalUser: boolean = false;
 
@@ -121,30 +167,30 @@ export class GroupingService {
       throw Error();
     }
 
-    const freeUsersGroup: Group = {
+    groups.main = {
       id: GroupingService.nextGroupId++,
       userIds: freeUserIds,
       isAudioAvailableForLocalUser,
       isVideoAvailableForLocalUser
     };
-    groups.push(freeUsersGroup);
   }
 
   /** update groups for students who are in Private Talk */
-  private updateGroupsForPrivateTalk(groups: Group[]): void {
+  private updateGroupsForPrivateTalk(groups: Groups): void {
     /* no one listens to anyone during the Private Talk,except those in the Private Talk */
-    groups.forEach((group: Group): void => {
+    if (groups.main) {
+      groups.main.isAudioAvailableForLocalUser = false;
+    }
+    groups.teamTalk?.forEach((group: Group): void => {
       group.isAudioAvailableForLocalUser = false;
     });
 
-    const privateTalkGroup: Group = {
+    groups.privateTalk = {
       id: GroupingService.nextGroupId++,
       userIds: this.privateTalk.userIds,
       isAudioAvailableForLocalUser: true,
       isVideoAvailableForLocalUser: false
     };
-
-    groups.push(privateTalkGroup);
   }
 
   private isLocalUserInAnyTeam(): boolean {
@@ -170,12 +216,12 @@ export class GroupingService {
 
     this.store.select(PrivateTalkState).subscribe((privateTalk: PrivateTalk): void => {
       this.privateTalk = privateTalk;
-      this.updateGroups().then();
+      // this.updateGroups().then();
     });
 
     this.store.select(GameModeState).subscribe((gameMode: GameMode): void => {
       this.gameMode = gameMode;
-      this.updateGroups().then();
+      // this.updateGroups().then();
     });
 
     this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {

@@ -18,9 +18,10 @@ import {AudioVideoService} from "../../service/audio-video/audio-video.service";
 import {GameMode, GameModeState} from "../../state/game-mode.state";
 import {TeamId,} from "../../model/types";
 import {GameModeService} from "../../service/game-mode.service";
-import {RemoteUserComponent} from "./remote-users/remote-user/remote-user.component";
-import {LocalUserComponent} from "./remote-users/local-user/local-user.component";
+import {RemoteUserComponent} from "./users/remote-user/remote-user.component";
+import {LocalUserComponent} from "./users/local-user/local-user.component";
 import {Team} from "../../model/team";
+import {RolesPipe} from "../../pipe/roles.pipe";
 
 @Component({
   selector: 'app-classroom',
@@ -31,7 +32,8 @@ import {Team} from "../../model/team";
     NgIf,
     KeyValuePipe,
     RemoteUserComponent,
-    LocalUserComponent
+    LocalUserComponent,
+    RolesPipe
   ],
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.css'
@@ -42,9 +44,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   protected remoteUsers: RemoteUsers = RemoteUsersState.defaults;
   protected gameMode: GameMode = GameModeState.defaults;
 
-  protected localUserTeam: Team | undefined;
-
-  protected joined: boolean = false;
+  protected localUserTeams: Team[] = [];
 
   protected readonly Role = Role;
 
@@ -74,21 +74,16 @@ export class ClassroomComponent implements OnInit, OnDestroy {
       this.websocketService.connect('/websocket')
         .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
           reject(error);
-          return throwError(() => new Error('Something bad happened; please try again later.'));
+          return throwError(() => new Error('Something bad happened, please try again later.'));
         }))
         .subscribe(resolve);
     });
 
     /* join to Zoom */
-    const zoomJoinPromise: Promise<void> = this.audioVideoService.init()
-      .then((): Promise<void> =>
-        this.audioVideoService.join()
-          .then((): void => {
-            this.joined = true;
-          })
-      );
+    const audioVideoJoinPromise: Promise<void> = this.audioVideoService.init()
+      .then((): Promise<void> => this.audioVideoService.join());
 
-    Promise.all([websocketConnectPromise, zoomJoinPromise])
+    Promise.all([websocketConnectPromise, audioVideoJoinPromise])
       .then((): void => {
         /* connected to VCR web socket and joined to Zoom */
         this.store.dispatch(new LocalUserAction.SetConnectionState(RoomConnection.ONLINE));
@@ -111,38 +106,6 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     this.audioVideoService.leave();
   }
 
-  public toggleVideo(): void {
-    if (this.localUser.audioVideoUser?.isVideoOn) {
-      this.audioVideoService.stopLocalVideo().then((): void => {
-        this.httpClient.post<void>(
-          `http://localhost:8090/user/${this.classroom?.roomNumber}/user-video-state-changed`,
-          {
-            userId: this.localUser.id,
-            isOn: false
-          }
-        ).subscribe();
-      });
-    } else {
-      this.audioVideoService.startLocalVideo().then((): void => {
-        this.httpClient.post<void>(
-          `http://localhost:8090/user/${this.classroom?.roomNumber}/user-video-state-changed`,
-          {
-            userId: this.localUser.id,
-            isOn: true
-          }
-        ).subscribe();
-      });
-    }
-  };
-
-  public toggleAudio(): void {
-    if (this.localUser.audioVideoUser?.isAudioOn) {
-      this.audioVideoService.muteLocalAudio().then()
-    } else {
-      this.audioVideoService.unmuteLocalAudio().then()
-    }
-  };
-
   private listenStoreChanges(): void {
     this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
       this.classroom = classroom;
@@ -160,8 +123,8 @@ export class ClassroomComponent implements OnInit, OnDestroy {
       this.gameMode = gameMode;
 
       if (this.gameMode.isStarted) {
-        this.localUserTeam = Object.values(this.gameMode.teams)
-          .find((team: Team): boolean => team.userIds.has(this.localUser.id));
+        this.localUserTeams = Object.values(this.gameMode.teams)
+          .filter((team: Team): boolean => team.userIds.has(this.localUser.id));
       }
     });
   }
@@ -180,18 +143,22 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     const users: User[] = Object.values(this.remoteUsers);
     users.push(this.localUser);
 
-    users.reduce((result: User[][], value: User, index: number, array: User[]): User[][] => {
+    const teachers: User[] = users.filter((user: User): boolean => user.role === Role.TEACHER);
+    const students: User[] = users.filter((user: User): boolean => user.role === Role.STUDENT);
+
+    students.reduce((result: User[][], value: User, index: number, array: User[]): User[][] => {
       if (index % 2 === 0) {
         result.push(array.slice(index, index + 2));
       }
 
       return result;
     }, []).forEach((users: User[]): void => {
-      const teamMembers: User[] = Object.assign([], users);
-
-      if (this.localUser.role === Role.TEACHER) {
-        teamMembers.push(this.localUser);
+      if (users.length === 0) {
+        return;
       }
+
+      const teamMembers: User[] = Object.assign([], users);
+      teamMembers.push(...teachers);
 
       this.gameModeService.createTeam(teamMembers, teamId, `team_${teamId}`, colors[teamId]);
       teamId++;
@@ -199,7 +166,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     this.gameModeService.startGameMode().then();
   }
 
-  public toggleTeamTalk(): void {
+  protected toggleTeamTalk(): void {
     if (this.gameMode.isTeamTalkStarted) {
       this.gameModeService.endTeamTalk().then();
     } else {

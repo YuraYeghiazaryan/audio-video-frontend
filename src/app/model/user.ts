@@ -16,6 +16,7 @@ export enum RoomConnection {
 
 export interface AudioVideoUser {
   id: AudioVideoUserId;
+  joined: boolean;
   isVideoOn: boolean;
   isAudioOn: boolean;
 }

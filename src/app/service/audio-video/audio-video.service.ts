@@ -1,4 +1,4 @@
-import {Group} from "../grouping.service";
+import {Group, Groups} from "../grouping.service";
 import {UserId} from "../../model/types";
 
 export abstract class AudioVideoService {
@@ -20,5 +20,5 @@ export abstract class AudioVideoService {
   public abstract muteLocalAudio(): Promise<void>;
   public abstract unmuteLocalAudio(): Promise<void>;
 
-  public abstract breakRoomIntoGroups(groups: Group[]): Promise<void>;
+  public abstract breakRoomIntoGroups(groups: Groups): Promise<void>;
 }

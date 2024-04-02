@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "VideoZoomTestApp": {
+    "audio-video-frontend": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/video-zoom-test-app",
+            "outputPath": "dist/audio-video-frontend",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -64,10 +64,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "VideoZoomTestApp:build:production"
+              "buildTarget": "audio-video-frontend:build:production"
             },
             "development": {
-              "buildTarget": "VideoZoomTestApp:build:development"
+              "buildTarget": "audio-video-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -75,7 +75,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "VideoZoomTestApp:build"
+            "buildTarget": "audio-video-frontend:build"
           }
         },
         "test": {
