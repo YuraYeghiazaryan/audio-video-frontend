@@ -8,6 +8,7 @@ import {LocalUser} from "../model/local-user";
 import {LocalUserState} from "../state/local-user.state";
 import {Classroom} from "../model/classroom";
 import {ClassroomState} from "../state/classroom.state";
+import {GroupingService} from "./grouping.service";
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,7 @@ export class PrivateTalkService {
   private privateTalk: PrivateTalk = PrivateTalkState.defaults;
 
   constructor(
+    private groupingService: GroupingService,
     private store: Store,
     private httpClient: HttpClient
   ) {
@@ -28,6 +30,7 @@ export class PrivateTalkService {
     this.store.dispatch(new PrivateTalkAction.StartPrivateTalk());
 
     if (send) {
+      await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/private-talk`,
         {
@@ -36,12 +39,15 @@ export class PrivateTalkService {
         }
       ));
     }
+
+    await this.groupingService.updateGroups();
   }
 
   public async endPrivateTalk(send: boolean = true): Promise<void> {
     this.store.dispatch(new PrivateTalkAction.EndPrivateTalk());
 
     if (send) {
+      await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/private-talk`,
         {
@@ -50,6 +56,8 @@ export class PrivateTalkService {
         }
       ));
     }
+
+    await this.groupingService.updateGroups();
   }
 
   public async addUserToPrivateTalk(user: User, send: boolean = true): Promise<void> {
@@ -59,6 +67,7 @@ export class PrivateTalkService {
     }
 
     if (send) {
+      await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/add-user-to-private-talk`,
         {
@@ -67,6 +76,8 @@ export class PrivateTalkService {
         }
       ));
     }
+
+    await this.groupingService.updateGroups();
   }
 
   public async removeUserFromPrivateTalk(user: User, send: boolean = true): Promise<void> {
@@ -76,6 +87,7 @@ export class PrivateTalkService {
     }
 
     if (send) {
+      await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
         `http://localhost:8090/classroom/${this.classroom.roomNumber}/remove-user-from-private-talk`,
         {
@@ -84,6 +96,8 @@ export class PrivateTalkService {
         }
       ));
     }
+
+    await this.groupingService.updateGroups();
   }
 
   private listenStoreChanges(): void {

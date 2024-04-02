@@ -15,7 +15,7 @@ import {RemoteUser} from "../../../model/remote-user";
 import {lastValueFrom} from "rxjs";
 import {UserId, AudioVideoUserId} from "../../../model/types";
 import {AudioVideoUser} from "../../../model/user";
-import {Group} from "../../grouping.service";
+import {Group, Groups} from "../../grouping.service";
 import SetAudioListenable = RemoteUsersAction.SetAudioListenable;
 import SetVideoVisible = RemoteUsersAction.SetVideoVisible;
 
@@ -169,10 +169,21 @@ export class ZoomService extends AudioVideoService {
   }
 
 
-  public override async breakRoomIntoGroups(groups: Group[]): Promise<void> {
+  public override async breakRoomIntoGroups(groups: Groups): Promise<void> {
     const promises: Promise<void>[] = [];
 
-    groups.forEach((group: Group): void => {
+    const allGroups: Group[] = [];
+    if (groups.main) {
+      allGroups.push(groups.main);
+    }
+    if (groups.privateTalk) {
+      allGroups.push(groups.privateTalk);
+    }
+    if (groups.teamTalk) {
+      allGroups.push(...groups.teamTalk);
+    }
+
+    allGroups.forEach((group: Group): void => {
       group.userIds.forEach((userId: UserId): void => {
 
         if (userId === this.localUser.id) {

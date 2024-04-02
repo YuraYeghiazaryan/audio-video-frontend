@@ -9,7 +9,6 @@ import {ClassroomState} from "./state/classroom.state";
 import {LocalUserState} from "./state/local-user.state";
 import {RemoteUsersState} from "./state/remote-users.state";
 import {AudioVideoService} from "./service/audio-video/audio-video.service";
-import {ZoomService} from "./service/audio-video/provider/zoom.service";
 import {GameModeState} from "./state/game-mode.state";
 import {ChimeService} from "./service/audio-video/provider/chime.service";
 import {PrivateTalkState} from "./state/private-talk.state";

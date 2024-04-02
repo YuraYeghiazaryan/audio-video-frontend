@@ -74,7 +74,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
       this.websocketService.connect('/websocket')
         .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
           reject(error);
-          return throwError(() => new Error('Something bad happened; please try again later.'));
+          return throwError(() => new Error('Something bad happened, please try again later.'));
         }))
         .subscribe(resolve);
     });
@@ -166,7 +166,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     this.gameModeService.startGameMode().then();
   }
 
-  public toggleTeamTalk(): void {
+  protected toggleTeamTalk(): void {
     if (this.gameMode.isTeamTalkStarted) {
       this.gameModeService.endTeamTalk().then();
     } else {
