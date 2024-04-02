@@ -269,8 +269,8 @@ export class ChimeService extends AudioVideoService {
     const logger: ConsoleLogger = new ConsoleLogger(loggerName, LogLevel.INFO);
     const deviceController: DefaultDeviceController = new DefaultDeviceController(logger, {enableWebAudio: true});
 
-    const meetingResponse: any = connectionOptions.createMeetingResult;
-    const attendeeResponse: any = connectionOptions.createAttendeeResult;
+    const meetingResponse: any = connectionOptions.meeting;
+    const attendeeResponse: any = connectionOptions.attendee;
 
     const configuration: MeetingSessionConfiguration = new MeetingSessionConfiguration(meetingResponse, attendeeResponse);
 

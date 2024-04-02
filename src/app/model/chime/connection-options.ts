@@ -1,4 +1,4 @@
 export interface ConnectionOptions {
-  createMeetingResult: any;
-  createAttendeeResult: any;
+  meeting: any;
+  attendee: any;
 }
