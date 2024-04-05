@@ -7,24 +7,24 @@ import {Store} from "@ngxs/store";
 import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
 import {PrivateTalk, PrivateTalkState} from "../state/private-talk.state";
 import {GameMode, GameModeState} from "../state/game-mode.state";
-import {Team} from "../model/team";
 import {lastValueFrom} from "rxjs";
 import {ClassroomState} from "../state/classroom.state";
 import {Classroom} from "../model/classroom";
 import {AudioVideoService} from "./audio-video/audio-video.service";
 import {HttpClient} from "@angular/common/http";
-import produce from "immer";
 
 export interface Group {
-  id: number;
   userIds: Set<UserId>;
   isAudioAvailableForLocalUser: boolean;
   isVideoAvailableForLocalUser: boolean;
 }
+export interface Team extends Group {
+  id: number;
+}
 
 export interface Groups {
   main?: Group,
-  teamTalk?: Group[],
+  teamTalk?: Team[],
   privateTalk?: Group,
 }
 
@@ -38,8 +38,6 @@ export class GroupingService {
 
   private privateTalk: PrivateTalk = PrivateTalkState.defaults;
   private gameMode: GameMode = GameModeState.defaults;
-
-  private static nextGroupId: number = 0;
 
   constructor(
     private audioVideoService: AudioVideoService,
@@ -60,8 +58,6 @@ export class GroupingService {
     /* should be users set, which are not in any Team */
     const freeUserIds: Set<UserId> = new Set<UserId>(remoteUsersIds).add(this.localUser.id);
     const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
-
-    GroupingService.nextGroupId = 0;
 
     if (this.gameMode.isTeamTalkStarted) {
       this.updateGroupsForTeamTalk(groups, freeUserIds, isLocalUserInAnyTeam);
@@ -121,7 +117,7 @@ export class GroupingService {
 
   /** update groups for students who are in Teams */
   private updateGroupsForTeamTalk(groups: Groups, freeUserIds: Set<UserId>, isLocalUserInAnyTeam: boolean): void {
-    groups.teamTalk = Object.values(this.gameMode.teams).map((team: Team): Group => {
+    groups.teamTalk = Object.values(this.gameMode.teams).map((team: Team): Team => {
       /* remove from the freeUsers group those users who are already in other Teams */
       this.subtractSets(freeUserIds, team.userIds);
 
@@ -142,7 +138,7 @@ export class GroupingService {
       }
 
       return {
-        id: GroupingService.nextGroupId++,
+        id: team.id,
         userIds: team.userIds,
         isAudioAvailableForLocalUser,
         isVideoAvailableForLocalUser
@@ -168,7 +164,6 @@ export class GroupingService {
     }
 
     groups.main = {
-      id: GroupingService.nextGroupId++,
       userIds: freeUserIds,
       isAudioAvailableForLocalUser,
       isVideoAvailableForLocalUser
@@ -186,7 +181,6 @@ export class GroupingService {
     });
 
     groups.privateTalk = {
-      id: GroupingService.nextGroupId++,
       userIds: this.privateTalk.userIds,
       isAudioAvailableForLocalUser: true,
       isVideoAvailableForLocalUser: false

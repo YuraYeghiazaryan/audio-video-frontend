@@ -14,7 +14,7 @@
     Create demo teams
   </button>
 
-  <button (click)="toggleTeamTalk()">
+  <button *ngIf="this.gameMode.isStarted" (click)="toggleTeamTalk()">
     {{ gameMode.isTeamTalkStarted ? 'End' : 'Start' }} team talk
   </button>
 </ng-container>
@@ -24,7 +24,6 @@
   <ng-container *ngIf="gameMode.isStarted; then inGameMode else notInGameMode"></ng-container>
 
   <ng-template #inGameMode>
-    In game mode
     <ng-container *ngFor="let team of gameMode.teams | keyvalue">
       <ng-container *ngIf="gameMode.isTeamTalkStarted; then inTeamTalk else notInTeamTalk"></ng-container>
 
@@ -34,7 +33,7 @@
           <span [style]="{color: team.value.color}">{{ team.value.name }}</span>
           <div [style]="{'border-style': 'solid', 'border-color': team.value.color}">
             <ng-container *ngFor="let userId of team.value.userIds">
-              <app-remote-user *ngIf="remoteUsers[userId]?.role === Role.STUDENT" [remoteUser]="remoteUsers[userId]"></app-remote-user>
+              <app-remote-user *ngIf="remoteUsers[userId]?.role === Role.STUDENT && userId !== localUser.id" [remoteUser]="remoteUsers[userId]"></app-remote-user>
             </ng-container>
           </div>
         </ng-container>
@@ -44,8 +43,8 @@
         <br>
         <span [style]="{color: team.value.color}">{{ team.value.name }}</span>
         <div [style]="{'border-style': 'solid', 'border-color': team.value.color}">
-          <ng-container [style]="{'border-color': team.value.color}" *ngFor="let userId of team.value.userIds">
-            <app-remote-user *ngIf="remoteUsers[userId]?.role === Role.STUDENT" [remoteUser]="remoteUsers[userId]"></app-remote-user>
+          <ng-container *ngFor="let userId of team.value.userIds">
+            <app-remote-user *ngIf="remoteUsers[userId]?.role === Role.STUDENT && userId !== localUser.id" [remoteUser]="remoteUsers[userId]"></app-remote-user>
           </ng-container>
         </div>
       </ng-template>
@@ -53,7 +52,6 @@
   </ng-template>
 
   <ng-template #notInGameMode>
-    Not in game mode
     <div style="border: black" *ngFor="let remoteUser of (this.remoteUsers | roles: Role.STUDENT | filterOnlineUsers)">
       <app-remote-user [remoteUser]="remoteUser"></app-remote-user>
     </div>

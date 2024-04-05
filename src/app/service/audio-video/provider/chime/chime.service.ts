@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
-import {AudioVideoService} from "../audio-video.service";
-import {Group, Groups} from "../../grouping.service";
-import {AudioVideoUserId, UserId} from "../../../model/types";
+import {AudioVideoService} from "../../audio-video.service";
+import {Groups} from "../../../grouping.service";
+import {AudioVideoUserId, UserId} from "../../../../model/types";
 import {
   ConsoleLogger,
   DefaultDeviceController,
@@ -13,16 +13,18 @@ import {
   VoiceFocusTransformDevice
 } from "amazon-chime-sdk-js";
 import {HttpClient} from "@angular/common/http";
-import {ConnectionOptions} from "../../../model/chime/connection-options";
+import {ConnectionOptions} from "../../../../model/chime/connection-options";
 import {lastValueFrom} from "rxjs";
-import {Classroom} from "../../../model/classroom";
-import {ClassroomState} from "../../../state/classroom.state";
-import {LocalUser} from "../../../model/local-user";
-import {LocalUserAction, LocalUserState} from "../../../state/local-user.state";
-import {RemoteUsers, RemoteUsersState} from "../../../state/remote-users.state";
+import {Classroom} from "../../../../model/classroom";
+import {ClassroomState} from "../../../../state/classroom.state";
+import {LocalUser} from "../../../../model/local-user";
+import {LocalUserAction, LocalUserState} from "../../../../state/local-user.state";
+import {RemoteUsers, RemoteUsersState} from "../../../../state/remote-users.state";
 import {Store} from "@ngxs/store";
-import {RemoteUser} from "../../../model/remote-user";
-import {AudioVideoUser} from "../../../model/user";
+import {RemoteUser} from "../../../../model/remote-user";
+import {AudioVideoUser} from "../../../../model/user";
+import {ChimeUtilService} from "./chime.util.service";
+import MeetingSessionStatus from "amazon-chime-sdk-js/build/meetingsession/MeetingSessionStatus";
 
 /* @TODO RENAME*/
 interface VideoTile {
@@ -49,14 +51,13 @@ export class ChimeService extends AudioVideoService {
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
 
-  // private mainMeeting: Meeting | undefined;
-  private subMeetings: {[key: number]: Meeting} = {};
   private meetings: Meetings = {}
 
   private localUserVideoTile: VideoTile | undefined = undefined;
   private remoteUserVideoTiles: {[key: AudioVideoUserId]: VideoTile} = {};
 
   constructor(
+    private chimeUtilService: ChimeUtilService,
     private httpClient: HttpClient,
     private store: Store
   ) {
@@ -65,8 +66,9 @@ export class ChimeService extends AudioVideoService {
   }
 
   public override async init(): Promise<void> {
-    const connectionOptions: ConnectionOptions = await this.getMainSessionConnectionOptions();
-    // this.mainMeeting = await this.createMeetingSession(connectionOptions, 'mainSessionLogger');
+    const mainRoomName: string = this.chimeUtilService.buildMainRoomName();
+
+    const connectionOptions: ConnectionOptions = await this.getConnectionOptions(mainRoomName);
     this.meetings.main = await this.createMeetingSession(connectionOptions, 'mainSessionLogger');
   }
 
@@ -88,11 +90,11 @@ export class ChimeService extends AudioVideoService {
     this.store.dispatch(new LocalUserAction.SetAudioVideoUser(audioVideoUser));
   }
   public leave(): void {
-    if (!this.meetings.main) {
-      return;
-    }
-
-    this.meetings.main.session.audioVideo.stop();
+    this.meetings.main?.session.audioVideo.stop();
+    this.meetings.privateTalk?.session.audioVideo.stop();
+    this.meetings.teamTalk?.forEach((meeting: Meeting): void => {
+      meeting.session.audioVideo.stop();
+    });
   }
 
 
@@ -147,7 +149,7 @@ export class ChimeService extends AudioVideoService {
       this.meetings.main.session.audioVideo.startLocalVideoTile();
     }
 
-    Object.values(this.subMeetings)
+    Object.values(this.allMeetings)
       .forEach((meeting: Meeting): void => {
         meeting.session.audioVideo.startLocalVideoTile();
       });
@@ -160,7 +162,7 @@ export class ChimeService extends AudioVideoService {
       this.meetings.main.session.audioVideo.stopLocalVideoTile();
     }
 
-    Object.values(this.subMeetings)
+    Object.values(this.allMeetings)
       .forEach((meeting: Meeting): void => {
         meeting.session.audioVideo.stopLocalVideoTile();
       });
@@ -173,7 +175,7 @@ export class ChimeService extends AudioVideoService {
       this.meetings.main.session.audioVideo.realtimeUnmuteLocalAudio();
     }
 
-    Object.values(this.subMeetings)
+    Object.values(this.allMeetings)
       .forEach((meeting: Meeting): void => {
         meeting.session.audioVideo.realtimeUnmuteLocalAudio();
       });
@@ -186,7 +188,7 @@ export class ChimeService extends AudioVideoService {
       this.meetings.main.session.audioVideo.realtimeMuteLocalAudio();
     }
 
-    Object.values(this.subMeetings)
+    Object.values(this.allMeetings)
       .forEach((meeting: Meeting): void => {
         meeting.session.audioVideo.realtimeMuteLocalAudio();
       });
@@ -195,53 +197,51 @@ export class ChimeService extends AudioVideoService {
   }
 
   public override async breakRoomIntoGroups(groups: Groups): Promise<void> {
-    this.meetings.teamTalk?.forEach((meeting: Meeting): void => {
-        meeting.session.audioVideo.stop();
-        meeting.session.destroy();
-        meeting.audioElement?.remove();
-      });
+    this.leave();
+    this.meetings.main = undefined;
+    this.meetings.privateTalk = undefined;
     this.meetings.teamTalk = [];
 
-    this.meetings.main?.session?.audioVideo?.stop();
-    this.meetings.main?.session?.destroy();
+    if (groups.main && groups.main.userIds.has(this.localUser.id)) {
+      const mainRoomName: string = this.chimeUtilService.buildMainRoomName();
+      const isAudioAvailableForLocalUser: boolean = groups.main.isAudioAvailableForLocalUser;
 
-    this.meetings.privateTalk?.session?.audioVideo?.stop();
-    this.meetings.privateTalk?.session?.destroy();
-
-    const allGroups: Group[] = [];
-    if (groups.main) {
-      allGroups.push(groups.main);
+      this.meetings.main = await this.createMeeting(mainRoomName, isAudioAvailableForLocalUser);
     }
+
     if (groups.teamTalk) {
-      allGroups.push(...groups.teamTalk);
-    }
-    if (groups.privateTalk) {
-      allGroups.push(groups.privateTalk);
-    }
+      for (const team of groups.teamTalk) {
+        if (team.userIds.has(this.localUser.id)) {
+          const teamRoomName: string = this.chimeUtilService.buildTeamTalkRoomName(team.id);
+          const isAudioAvailableForLocalUser: boolean = team.isAudioAvailableForLocalUser;
 
-    for (const group of allGroups) {
-      if (!group.userIds.has(this.localUser.id)) {
-        continue;
+          this.meetings.teamTalk.push(await this.createMeeting(teamRoomName, isAudioAvailableForLocalUser));
+        }
       }
+    }
 
-      await this.createMeetingFromGroup(group);
+    if (groups.privateTalk && groups.privateTalk.userIds.has(this.localUser.id)) {
+      const privateTalkRoomName: string = this.chimeUtilService.buildPrivateTalkRoomName();
+      const isAudioAvailableForLocalUser: boolean = groups.privateTalk.isAudioAvailableForLocalUser;
+
+      this.meetings.privateTalk = await this.createMeeting(privateTalkRoomName, isAudioAvailableForLocalUser);
     }
   }
 
-  private async createMeetingFromGroup(group: Group): Promise<Meeting> {
-    const connectionOptions: ConnectionOptions = await this.getSubSessionConnectionOptions(group.id);
-    this.subMeetings[group.id] = await this.createMeetingSession(connectionOptions, `subSessionLogger_${group.id}`, group.isAudioAvailableForLocalUser);
-    this.subMeetings[group.id].session.audioVideo.start();
+  private async createMeeting(roomName: string, isAudioAvailableForLocalUser: boolean): Promise<Meeting> {
+    const connectionOptions: ConnectionOptions = await this.getConnectionOptions(roomName);
+    const meeting: Meeting = await this.createMeetingSession(connectionOptions, `subSessionLogger_${roomName}`, isAudioAvailableForLocalUser);
+    meeting.session.audioVideo.start();
 
     if (this.localUser.audioVideoUser?.isVideoOn) {
-      this.subMeetings[group.id].session.audioVideo.startLocalVideoTile();
+      meeting.session.audioVideo.startLocalVideoTile();
     }
 
     if (this.localUser.audioVideoUser?.isAudioOn) {
-      this.subMeetings[group.id].session.audioVideo.realtimeUnmuteLocalAudio();
+      meeting.session.audioVideo.realtimeUnmuteLocalAudio();
     }
 
-    return this.subMeetings[group.id];
+    return meeting;
   }
 
   private async startRemoteVideo(userId: AudioVideoUserId): Promise<void> {
@@ -328,6 +328,9 @@ export class ChimeService extends AudioVideoService {
     });
 
     meetingSession.audioVideo.addObserver({
+      audioVideoDidStop: (sessionStatus: MeetingSessionStatus): void => {
+        console.warn(sessionStatus);
+      },
       videoTileDidUpdate: (tileState: VideoTileState): void => {
         if (!meetingSession?.audioVideo) {
           throw Error();
@@ -365,23 +368,32 @@ export class ChimeService extends AudioVideoService {
     };
   }
 
-  private getMainSessionConnectionOptions(): Promise<ConnectionOptions> {
-    return lastValueFrom(this.httpClient.get<ConnectionOptions>('http://localhost:8090/audio-video/main-session/connection-options', {
+  private getConnectionOptions(roomName: string): Promise<ConnectionOptions> {
+    return lastValueFrom(this.httpClient.get<ConnectionOptions>('http://localhost:8090/audio-video/connection-options', {
       params: {
         roomNumber: this.classroom.roomNumber,
+        roomName,
         username: this.localUser.username
       }
     }));
   }
 
-  private getSubSessionConnectionOptions(groupId: number): Promise<ConnectionOptions> {
-    return lastValueFrom(this.httpClient.get<ConnectionOptions>('http://localhost:8090/audio-video/sub-session/connection-options', {
-      params: {
-        roomNumber: this.classroom.roomNumber,
-        groupId,
-        username: this.localUser.username
-      }
-    }));
+  private get allMeetings(): Meeting[] {
+    const meetings: Meeting[] = [];
+
+    if (this.meetings.main) {
+      meetings.push(this.meetings.main);
+    }
+
+    if (this.meetings.privateTalk) {
+      meetings.push(this.meetings.privateTalk);
+    }
+
+    if (this.meetings.teamTalk) {
+      meetings.push(...this.meetings.teamTalk);
+    }
+
+    return meetings;
   }
 
   private listenStoreChanges(): void {

@@ -76,6 +76,7 @@ export class UserService {
       `http://localhost:8090/user/login`,
       {
         params: {
+          roomNumber: this.classroom.roomNumber,
           username,
           role
         }

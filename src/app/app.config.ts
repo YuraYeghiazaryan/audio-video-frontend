@@ -10,7 +10,7 @@ import {LocalUserState} from "./state/local-user.state";
 import {RemoteUsersState} from "./state/remote-users.state";
 import {AudioVideoService} from "./service/audio-video/audio-video.service";
 import {GameModeState} from "./state/game-mode.state";
-import {ChimeService} from "./service/audio-video/provider/chime.service";
+import {ChimeService} from "./service/audio-video/provider/chime/chime.service";
 import {PrivateTalkState} from "./state/private-talk.state";
 
 export function initializeApp(classroomService: ClassroomService): () => Promise<void> {

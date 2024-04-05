@@ -110,9 +110,6 @@ export class ZoomService extends AudioVideoService {
     }
   }
   public override async removeRemoteUserVideoElement(userId: UserId): Promise<void> {
-    const remoteUser: RemoteUser | undefined = this.remoteUsers[userId];
-    await this.stopUserVideo(remoteUser.audioVideoUser.id);
-
     delete this.remoteUserVideoElements[userId];
   }
 
@@ -250,11 +247,13 @@ export class ZoomService extends AudioVideoService {
 
     this.client.on('peer-video-state-change', (payload: { action: "Start" | "Stop"; userId: number }): void => {
       if (payload.action === 'Start') {
-        setTimeout((): void => {
-          this.renderUserVideo(payload.userId + '').then();
-        }, 100);
+        this.renderUserVideo(payload.userId + '')
+          .then(() => {console.log("rendered")})
+          .catch(() => {console.log("not rendered")});
       } else if (payload.action === 'Stop') {
-        this.stopUserVideo(payload.userId + '').then();
+        this.stopUserVideo(payload.userId + '')
+          .then(() => {console.log("render stopped")})
+          .catch(() => {console.log("render didn't stop")});
       }
     });
   }
@@ -277,7 +276,7 @@ export class ZoomService extends AudioVideoService {
       return;
     }
 
-    await this.stream.renderVideo(remoteUserVideo, userId, 200, 112, 0, 0, 3);
+    await this.stream.renderVideo(remoteUserVideo, parseInt(userId), 200, 112, 0, 0, 3);
   }
 
   /** stop remote user video when user turn off video */
@@ -298,7 +297,7 @@ export class ZoomService extends AudioVideoService {
       return;
     }
 
-    await this.stream.stopRenderVideo(remoteUserVideo, userId);
+    await this.stream.stopRenderVideo(remoteUserVideo, parseInt(userId));
   }
 
   /** initialize stream, get media stream, register event listeners and render videos of remote users */
