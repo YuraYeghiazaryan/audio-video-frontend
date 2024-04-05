@@ -90,7 +90,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
 
         /* notify VCR server about local user readiness */
         this.httpClient.post<void>(
-          `/api/classroom/${this.classroom?.roomNumber}/user-joined`,
+          `/api/classroom/user-joined`,
           this.localUser
         ).subscribe();
 

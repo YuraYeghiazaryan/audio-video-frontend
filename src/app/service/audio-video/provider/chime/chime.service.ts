@@ -368,7 +368,6 @@ export class ChimeService extends AudioVideoService {
     return lastValueFrom(this.httpClient.get<ConnectionOptions>(
       '/api/audio-video/connection-options', {
       params: {
-        roomNumber: this.classroom.roomNumber,
         roomName,
         username: this.localUser.username
       }

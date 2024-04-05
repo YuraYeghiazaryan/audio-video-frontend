@@ -45,7 +45,7 @@ export class LocalUserComponent implements OnDestroy {
     if (this.localUser.audioVideoUser?.isVideoOn) {
       this.audioVideoService.stopLocalVideo().then((): void => {
         this.httpClient.post<void>(
-          `/api/user/${this.classroom?.roomNumber}/user-video-state-changed`,
+          `/api/user/user-video-state-changed`,
           {
             userId: this.localUser.id,
             isOn: false
@@ -55,7 +55,7 @@ export class LocalUserComponent implements OnDestroy {
     } else {
       this.audioVideoService.startLocalVideo().then((): void => {
         this.httpClient.post<void>(
-          `/api/user/${this.classroom?.roomNumber}/user-video-state-changed`,
+          `/api/user/user-video-state-changed`,
           {
             userId: this.localUser.id,
             isOn: true
@@ -69,7 +69,7 @@ export class LocalUserComponent implements OnDestroy {
     if (this.localUser.audioVideoUser?.isAudioOn) {
       this.audioVideoService.muteLocalAudio().then((): void => {
         this.httpClient.post<void>(
-          `/api/user/${this.classroom?.roomNumber}/user-audio-state-changed`,
+          `/api/user/user-audio-state-changed`,
           {
             userId: this.localUser.id,
             isOn: true
@@ -79,7 +79,7 @@ export class LocalUserComponent implements OnDestroy {
     } else {
       this.audioVideoService.unmuteLocalAudio().then((): void => {
         this.httpClient.post<void>(
-          `/api/user/${this.classroom?.roomNumber}/user-audio-state-changed`,
+          `/api/user/user-audio-state-changed`,
           {
             userId: this.localUser.id,
             isOn: true
