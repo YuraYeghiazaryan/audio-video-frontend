@@ -197,7 +197,7 @@ export class ChimeService extends AudioVideoService {
   }
 
   public override async breakRoomIntoGroups(groups: Groups): Promise<void> {
-    this.leave();
+    // this.leave();
     this.meetings.main = undefined;
     this.meetings.privateTalk = undefined;
     this.meetings.teamTalk = [];
