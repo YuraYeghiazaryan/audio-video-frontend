@@ -66,7 +66,7 @@ export class GameModeService {
     if (send) {
       await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/game-mode`,
+        `/api/classroom/${this.classroom.roomNumber}/game-mode`,
         {
           senderId: this.localUser.id,
           started: true,
@@ -84,7 +84,7 @@ export class GameModeService {
     if (send) {
       await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/game-mode`,
+        `/api/classroom/${this.classroom.roomNumber}/game-mode`,
         {
           senderId: this.localUser.id,
           started: false
@@ -101,7 +101,7 @@ export class GameModeService {
     if (send) {
       await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/team-talk`,
+        `/api/classroom/${this.classroom.roomNumber}/team-talk`,
         {
           senderId: this.localUser.id,
           started: true
@@ -118,7 +118,7 @@ export class GameModeService {
     if (send) {
       await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/team-talk`,
+        `/api/classroom/${this.classroom.roomNumber}/team-talk`,
         {
           senderId: this.localUser.id,
           started: false

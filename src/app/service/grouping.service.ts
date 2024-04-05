@@ -98,7 +98,7 @@ export class GroupingService {
 
     if (send) {
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/audio-video/${this.classroom.roomNumber}/break-room-into-groups`,
+        `/api/audio-video/${this.classroom.roomNumber}/break-room-into-groups`,
         {
           senderId: this.localUser.id,
           groups: groupsCopy

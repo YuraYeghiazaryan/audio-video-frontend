@@ -32,7 +32,7 @@ export class PrivateTalkService {
     if (send) {
       await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/private-talk`,
+        `/api/classroom/${this.classroom.roomNumber}/private-talk`,
         {
           senderId: this.localUser.id,
           started: true
@@ -49,7 +49,7 @@ export class PrivateTalkService {
     if (send) {
       await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/private-talk`,
+        `/api/classroom/${this.classroom.roomNumber}/private-talk`,
         {
           senderId: this.localUser.id,
           started: false
@@ -69,7 +69,7 @@ export class PrivateTalkService {
     if (send) {
       await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/add-user-to-private-talk`,
+        `/api/classroom/${this.classroom.roomNumber}/add-user-to-private-talk`,
         {
           senderId: this.localUser.id,
           userId: user.id
@@ -89,7 +89,7 @@ export class PrivateTalkService {
     if (send) {
       await this.groupingService.breakRoomIntoGroups(send);
       await lastValueFrom(this.httpClient.post<void>(
-        `http://localhost:8090/classroom/${this.classroom.roomNumber}/remove-user-from-private-talk`,
+        `/api/classroom/${this.classroom.roomNumber}/remove-user-from-private-talk`,
         {
           senderId: this.localUser.id,
           userId: user.id

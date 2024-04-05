@@ -42,7 +42,7 @@ export class ConnectionHandleService {
     const connected: boolean = !(this.webSocketConnected && this.audioVideoConnected);
 
     this.httpClient.post<void>(
-      `http://localhost:8090/classroom/${this.classroom?.roomNumber}/user-connection-state-changed`,
+      `/api/classroom/${this.classroom?.roomNumber}/user-connection-state-changed`,
       {
         userId: this.localUser.id,
         connected

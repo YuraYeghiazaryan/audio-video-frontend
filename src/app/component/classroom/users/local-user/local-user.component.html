@@ -1,5 +1,6 @@
-<div *ngIf="localUser.audioVideoUser">
-  <video #mediaWrapper width="200" height="122"></video>
+<div *ngIf="localUser">
+<!--  <video #mediaWrapper width="200" height="122"></video>-->
+  <div #mediaWrapper></div>
   <br>
   {{ localUser.role }} {{ localUser.username }} {{ localUser.id }}
   <br>

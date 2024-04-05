@@ -36,7 +36,7 @@ export class UserService {
   /** get all users from BE and add them to remoteUsers.Then zoomApiService should be rendered its(depending on video state)*/
   public async updateRemoteUsers(): Promise<void> {
     const remoteUsers: RemoteUser[] = await lastValueFrom(this.httpClient.get<RemoteUser[]>(
-      `http://localhost:8090/classroom/${this.classroom?.roomNumber}/users`
+      `/api/classroom/${this.classroom?.roomNumber}/users`
     ));
 
     remoteUsers.forEach((remoteUser: RemoteUser): void => {
@@ -73,7 +73,7 @@ export class UserService {
   /** send user credentials to BE and get localUser object */
   private sendLogin(username: string, role: Role): Promise<LocalUser> {
     return lastValueFrom(this.httpClient.get<LocalUser>(
-      `http://localhost:8090/user/login`,
+      `/api/user/login`,
       {
         params: {
           roomNumber: this.classroom.roomNumber,

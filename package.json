@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --live-reload false",
+    "start": "ng serve --proxy-config proxy/localhost.json --live-reload false --host 0.0.0.0 --ssl",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -20,6 +20,7 @@
     "@angular/router": "^17.0.0",
     "@ngxs-labs/immer-adapter": "^3.0.5",
     "@ngxs/store": "^3.8.2",
+    "@opentok/client": "^2.27.3",
     "@stomp/stompjs": "^7.0.0",
     "@zoom/videosdk": "^1.10.5",
     "amazon-chime-sdk-js": "^3.20.0",

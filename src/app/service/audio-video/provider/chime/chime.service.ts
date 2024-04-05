@@ -23,10 +23,9 @@ import {RemoteUsers, RemoteUsersState} from "../../../../state/remote-users.stat
 import {Store} from "@ngxs/store";
 import {RemoteUser} from "../../../../model/remote-user";
 import {AudioVideoUser} from "../../../../model/user";
-import {ChimeUtilService} from "./chime.util.service";
+import {AudioVideoUtilService} from "../audio-video-util.service";
 import MeetingSessionStatus from "amazon-chime-sdk-js/build/meetingsession/MeetingSessionStatus";
 
-/* @TODO RENAME*/
 interface VideoTile {
   id?: number;
   mediaStream?: MediaStream;
@@ -57,7 +56,7 @@ export class ChimeService extends AudioVideoService {
   private remoteUserVideoTiles: {[key: AudioVideoUserId]: VideoTile} = {};
 
   constructor(
-    private chimeUtilService: ChimeUtilService,
+    private audioVideoUtilService: AudioVideoUtilService,
     private httpClient: HttpClient,
     private store: Store
   ) {
@@ -66,7 +65,7 @@ export class ChimeService extends AudioVideoService {
   }
 
   public override async init(): Promise<void> {
-    const mainRoomName: string = this.chimeUtilService.buildMainRoomName();
+    const mainRoomName: string = this.audioVideoUtilService.buildMainRoomName();
 
     const connectionOptions: ConnectionOptions = await this.getConnectionOptions(mainRoomName);
     this.meetings.main = await this.createMeetingSession(connectionOptions, 'mainSessionLogger');
@@ -156,7 +155,6 @@ export class ChimeService extends AudioVideoService {
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(true));
   }
-
   public override async stopLocalVideo(): Promise<void> {
     if (this.meetings.main?.session.audioVideo) {
       this.meetings.main.session.audioVideo.stopLocalVideoTile();
@@ -182,7 +180,6 @@ export class ChimeService extends AudioVideoService {
 
     this.store.dispatch(new LocalUserAction.SetIsAudioOn(true));
   }
-
   public override async muteLocalAudio(): Promise<void> {
     if (this.meetings.main?.session.audioVideo) {
       this.meetings.main.session.audioVideo.realtimeMuteLocalAudio();
@@ -203,7 +200,7 @@ export class ChimeService extends AudioVideoService {
     this.meetings.teamTalk = [];
 
     if (groups.main && groups.main.userIds.has(this.localUser.id)) {
-      const mainRoomName: string = this.chimeUtilService.buildMainRoomName();
+      const mainRoomName: string = this.audioVideoUtilService.buildMainRoomName();
       const isAudioAvailableForLocalUser: boolean = groups.main.isAudioAvailableForLocalUser;
 
       this.meetings.main = await this.createMeeting(mainRoomName, isAudioAvailableForLocalUser);
@@ -212,7 +209,7 @@ export class ChimeService extends AudioVideoService {
     if (groups.teamTalk) {
       for (const team of groups.teamTalk) {
         if (team.userIds.has(this.localUser.id)) {
-          const teamRoomName: string = this.chimeUtilService.buildTeamTalkRoomName(team.id);
+          const teamRoomName: string = this.audioVideoUtilService.buildTeamTalkRoomName(team.id);
           const isAudioAvailableForLocalUser: boolean = team.isAudioAvailableForLocalUser;
 
           this.meetings.teamTalk.push(await this.createMeeting(teamRoomName, isAudioAvailableForLocalUser));
@@ -221,7 +218,7 @@ export class ChimeService extends AudioVideoService {
     }
 
     if (groups.privateTalk && groups.privateTalk.userIds.has(this.localUser.id)) {
-      const privateTalkRoomName: string = this.chimeUtilService.buildPrivateTalkRoomName();
+      const privateTalkRoomName: string = this.audioVideoUtilService.buildPrivateTalkRoomName();
       const isAudioAvailableForLocalUser: boolean = groups.privateTalk.isAudioAvailableForLocalUser;
 
       this.meetings.privateTalk = await this.createMeeting(privateTalkRoomName, isAudioAvailableForLocalUser);
@@ -254,7 +251,6 @@ export class ChimeService extends AudioVideoService {
     remoteUserVideoTile.htmlElement.srcObject = remoteUserVideoTile.mediaStream;
     await remoteUserVideoTile.htmlElement.play();
   }
-
   private async stopRemoteVideo(userId: AudioVideoUserId): Promise<void> {
     const remoteUserVideoTile: VideoTile | null = this.remoteUserVideoTiles[userId];
     if (!remoteUserVideoTile.htmlElement) {
@@ -369,7 +365,8 @@ export class ChimeService extends AudioVideoService {
   }
 
   private getConnectionOptions(roomName: string): Promise<ConnectionOptions> {
-    return lastValueFrom(this.httpClient.get<ConnectionOptions>('http://localhost:8090/audio-video/connection-options', {
+    return lastValueFrom(this.httpClient.get<ConnectionOptions>(
+      '/api/audio-video/connection-options', {
       params: {
         roomNumber: this.classroom.roomNumber,
         roomName,
