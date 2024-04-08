@@ -27,6 +27,7 @@ export interface Meeting {
 export interface VideoElement {
   htmlElement?: HTMLElement;
   subscriber?: OT.Subscriber;
+  stream?: Stream;
 }
 
 @Injectable({
@@ -78,16 +79,13 @@ export class OpentokService extends AudioVideoService {
 
         const audioVideoUserId: AudioVideoUserId = event.stream.connection.data;
 
-        const subscriber: OT.Subscriber | undefined = this.remoteUserVideoElements[audioVideoUserId].subscriber;
-        if (subscriber) {
-          subscriber.stream = event.stream;
-        }
+        this.remoteUserVideoElements[audioVideoUserId].stream = event.stream;
 
         this.startRemoteVideo(audioVideoUserId).then();
       });
 
       this.meeting?.session.connect(this.meeting.token, (error?: OT.OTError): void => {
-        if (!this.meeting?.session) {
+        if (!this.meeting?.session || !this.meeting.publisher) {
           reject('Can\'t join to not initialized session');
           return;
         }
@@ -96,6 +94,8 @@ export class OpentokService extends AudioVideoService {
           reject(`Can't join to session because of error: ${error}`);
           return;
         }
+
+        this.meeting.session.publish(this.meeting.publisher);
 
         this.onJoin();
 
@@ -154,7 +154,7 @@ export class OpentokService extends AudioVideoService {
   }
 
   public override async startLocalVideo(): Promise<void> {
-    if (!this.localUserVideoElement?.htmlElement) {
+    if (!this.meeting?.publisher || !this.localUserVideoElement?.htmlElement) {
       throw Error();
     }
 
@@ -167,7 +167,11 @@ export class OpentokService extends AudioVideoService {
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(true));
   }
   public override async stopLocalVideo(): Promise<void> {
-    this.meeting?.publisher?.publishVideo(false);
+    if (!this.meeting?.publisher) {
+      throw Error();
+    }
+
+    this.meeting.publisher?.publishVideo(false);
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(false));
   }
@@ -231,16 +235,28 @@ export class OpentokService extends AudioVideoService {
   private async startRemoteVideo(userId: AudioVideoUserId): Promise<void> {
     const remoteUserVideoElement: VideoElement | null = this.remoteUserVideoElements[userId];
 
-    if (!this.meeting || !remoteUserVideoElement?.htmlElement || !remoteUserVideoElement?.subscriber?.stream) {
+    if (!this.meeting || !remoteUserVideoElement?.htmlElement || !remoteUserVideoElement?.stream) {
       return;
     }
 
     remoteUserVideoElement.subscriber = this.meeting.session.subscribe(
-      remoteUserVideoElement.subscriber.stream,
+      remoteUserVideoElement.stream,
       this.remoteUserVideoElements[userId].htmlElement, {
-        subscribeToVideo: false,
+        insertMode: "replace",
         width: 200,
         height: 122,
+        style: {
+          audioLevelDisplayMode: 'off',
+          backgroundImageURI: 'off',
+          buttonDisplayMode: 'off',
+          nameDisplayMode: 'off',
+          videoDisabledDisplayMode: 'off',
+        },
+        testNetwork: true
+      }, (error?: OT.OTError): void => {
+        if (error) {
+          throw Error(error.message);
+        }
       }
     );
   }
@@ -295,6 +311,7 @@ export class OpentokService extends AudioVideoService {
       this.meeting.publisher = OT.initPublisher(
         htmlElement,
         {
+          insertMode: "replace",
           width: 200,
           height: 122,
           echoCancellation: true,

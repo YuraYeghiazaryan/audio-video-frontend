@@ -23,12 +23,6 @@ export function initializeApp(classroomService: ClassroomService): () => Promise
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    {
-      provide: AudioVideoService,
-      // useClass: ChimeService
-      // useClass: ZoomService
-      useClass: OpentokService
-    },
     importProvidersFrom(
       NgxsModule.forRoot([
         ClassroomState,
@@ -55,8 +49,9 @@ export const appConfig: ApplicationConfig = {
     },
     {
       provide: AudioVideoService,
-      useClass: ChimeService
+      // useClass: ChimeService
       // useClass: ZoomService
+      useClass: OpentokService
     },
   ]
 };
