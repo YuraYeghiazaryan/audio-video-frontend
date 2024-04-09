@@ -73,16 +73,7 @@ export class OpentokService extends AudioVideoService {
         this.initPublisher(this.localUserVideoElement.htmlElement);
       }
 
-      this.meeting?.session.on('streamCreated', (event: OT.Event<'streamCreated', OT.Session> & {stream: Stream}): void => {
-        console.log(typeof event);
-        console.log(event);
-
-        const audioVideoUserId: AudioVideoUserId = event.stream.connection.data;
-
-        this.remoteUserVideoElements[audioVideoUserId].stream = event.stream;
-
-        this.startRemoteVideo(audioVideoUserId).then();
-      });
+      this.listenClientEvents();
 
       this.meeting?.session.connect(this.meeting.token, (error?: OT.OTError): void => {
         if (!this.meeting?.session || !this.meeting.publisher) {
@@ -298,6 +289,25 @@ export class OpentokService extends AudioVideoService {
     };
 
     this.store.dispatch(new LocalUserAction.SetAudioVideoUser(audioVideoUser));
+  }
+
+  private listenClientEvents(): void {
+    this.meeting?.session.on('streamCreated', (event: OT.Event<'streamCreated', OT.Session> & {stream: Stream}): void => {
+      const audioVideoUserId: AudioVideoUserId = event.stream.connection.data;
+
+      this.remoteUserVideoElements[audioVideoUserId].stream = event.stream;
+
+      this.startRemoteVideo(audioVideoUserId).then();
+      this.remoteUserVideoElements[audioVideoUserId]?.subscriber?.subscribeToAudio(true);
+    });
+
+    this.meeting?.session.on("videoDisabled", (event: OT.Event<string, any>): void => {
+
+    });
+
+    this.meeting?.session.on("videoEnabled", (event: OT.Event<string, any>): void => {
+
+    });
   }
 
   private async initPublisher(htmlElement: HTMLElement): Promise<void> {
