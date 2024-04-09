@@ -25,7 +25,7 @@ export interface Meeting {
 }
 
 export interface VideoElement {
-  htmlElement?: HTMLElement;
+  htmlElement?: HTMLVideoElement;
   subscriber?: OT.Subscriber;
   stream?: Stream;
 }
@@ -86,8 +86,6 @@ export class OpentokService extends AudioVideoService {
           return;
         }
 
-        this.meeting.session.publish(this.meeting.publisher);
-
         this.onJoin();
 
         resolve();
@@ -98,7 +96,7 @@ export class OpentokService extends AudioVideoService {
     this.meeting?.session.disconnect();
   }
 
-  public override setLocalUserVideoElement(element: HTMLElement): void {
+  public override setLocalUserVideoElement(element: HTMLVideoElement): void {
     if (this.localUserVideoElement) {
       this.localUserVideoElement.htmlElement = element;
     } else {
@@ -121,7 +119,7 @@ export class OpentokService extends AudioVideoService {
     }
   }
 
-  public override async setRemoteUserVideoElement(userId: UserId, element: HTMLElement): Promise<void> {
+  public override async setRemoteUserVideoElement(userId: UserId, element: HTMLVideoElement): Promise<void> {
     const remoteUser: RemoteUser | undefined = this.remoteUsers[userId];
     if (!remoteUser) {
       await Promise.reject();
@@ -232,24 +230,27 @@ export class OpentokService extends AudioVideoService {
 
     remoteUserVideoElement.subscriber = this.meeting.session.subscribe(
       remoteUserVideoElement.stream,
-      this.remoteUserVideoElements[userId].htmlElement, {
-        insertMode: "replace",
-        width: 200,
-        height: 122,
-        style: {
-          audioLevelDisplayMode: 'off',
-          backgroundImageURI: 'off',
-          buttonDisplayMode: 'off',
-          nameDisplayMode: 'off',
-          videoDisabledDisplayMode: 'off',
-        },
-        testNetwork: true
-      }, (error?: OT.OTError): void => {
+      undefined,
+      {
+        insertDefaultUI: false,
+        subscribeToVideo: true,
+        subscribeToAudio: true,
+      },
+      (error?: OT.OTError): void => {
         if (error) {
           throw Error(error.message);
         }
       }
     );
+
+    remoteUserVideoElement.subscriber.on('videoElementCreated', (event): void => {
+      if (!remoteUserVideoElement.htmlElement) {
+        return;
+      }
+
+      remoteUserVideoElement.htmlElement.srcObject = (event.element as HTMLVideoElement).srcObject;
+      remoteUserVideoElement.htmlElement.play();
+    });
   }
   private async stopRemoteVideo(userId: AudioVideoUserId): Promise<void> {
     const remoteUserVideoElement: VideoElement | null = this.remoteUserVideoElements[userId];
@@ -276,16 +277,18 @@ export class OpentokService extends AudioVideoService {
   }
 
   private onJoin(): void {
-    if (!this.meeting?.session?.connection?.data) {
+    if (!this.meeting?.session?.connection?.data || !this.meeting.publisher) {
       throw Error();
     }
+
+    this.meeting.session.publish(this.meeting.publisher);
 
     /* initialize local zoom state */
     const audioVideoUser: AudioVideoUser = {
       id: this.meeting.session.connection.data,
       joined: true,
-      isVideoOn: false,
-      isAudioOn: false,
+      isVideoOn: true,
+      isAudioOn: true,
     };
 
     this.store.dispatch(new LocalUserAction.SetAudioVideoUser(audioVideoUser));
@@ -298,7 +301,6 @@ export class OpentokService extends AudioVideoService {
       this.remoteUserVideoElements[audioVideoUserId].stream = event.stream;
 
       this.startRemoteVideo(audioVideoUserId).then();
-      this.remoteUserVideoElements[audioVideoUserId]?.subscriber?.subscribeToAudio(true);
     });
 
     this.meeting?.session.on("videoDisabled", (event: OT.Event<string, any>): void => {
@@ -319,27 +321,29 @@ export class OpentokService extends AudioVideoService {
       }
 
       this.meeting.publisher = OT.initPublisher(
-        htmlElement,
+        undefined,
         {
-          insertMode: "replace",
-          width: 200,
-          height: 122,
-          echoCancellation: true,
+          insertDefaultUI: false,
           noiseSuppression: true,
-          style: {
-            audioLevelDisplayMode: 'off',
-            backgroundImageURI: 'off',
-            buttonDisplayMode: 'off',
-            nameDisplayMode: 'off',
-            videoDisabledDisplayMode: 'off',
-          },
-          publishAudio: false,
-          publishVideo: false
-        }, (error?: OT.OTError): void => {
+          echoCancellation: true,
+          publishVideo: true,
+          publishAudio: true,
+        },
+        (error?: OT.OTError): void => {
           if (error) {
             reject(error);
           }
         });
+
+      this.meeting.publisher.on('videoElementCreated', (event): void => {
+        if (!this.localUserVideoElement?.htmlElement) {
+          return;
+        }
+
+        this.localUserVideoElement.htmlElement.srcObject = (event.element as HTMLVideoElement).srcObject;
+        this.localUserVideoElement.htmlElement.play();
+        this.localUserVideoElement.htmlElement.muted = true;
+      });
 
       resolve();
     });
