@@ -1,23 +1,24 @@
 import {Injectable} from '@angular/core';
-import {AudioVideoService} from "../audio-video.service";
-import {Classroom} from "../../../model/classroom";
-import {ClassroomState} from "../../../state/classroom.state";
-import {LocalUser} from "../../../model/local-user";
-import {LocalUserAction, LocalUserState} from "../../../state/local-user.state";
-import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../../../state/remote-users.state";
-import {ConnectionOptions} from "../../../model/zoom/connection-options";
-import {UserService} from "../../user.service";
-import {ConnectionHandleService} from "../../connection-handle.service";
+import {AudioVideoService} from "../../audio-video.service";
+import {Classroom} from "../../../../model/classroom";
+import {ClassroomState} from "../../../../state/classroom.state";
+import {LocalUser} from "../../../../model/local-user";
+import {LocalUserAction, LocalUserState} from "../../../../state/local-user.state";
+import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../../../../state/remote-users.state";
+import {ConnectionOptions} from "../../../../model/zoom/connection-options";
+import {UserService} from "../../../user.service";
+import {ConnectionHandleService} from "../../../connection-handle.service";
 import {HttpClient} from "@angular/common/http";
 import {Store} from "@ngxs/store";
 import ZoomVideo, {ConnectionChangePayload, ConnectionState, Participant} from "@zoom/videosdk";
-import {RemoteUser} from "../../../model/remote-user";
+import {RemoteUser} from "../../../../model/remote-user";
 import {lastValueFrom} from "rxjs";
-import {UserId, AudioVideoUserId} from "../../../model/types";
-import {AudioVideoUser} from "../../../model/user";
-import {Group, Groups} from "../../grouping.service";
+import {UserId, AudioVideoUserId} from "../../../../model/types";
+import {AudioVideoUser} from "../../../../model/user";
+import {Group, Groups} from "../../../grouping.service";
 import SetAudioListenable = RemoteUsersAction.SetAudioListenable;
 import SetVideoVisible = RemoteUsersAction.SetVideoVisible;
+import {AudioVideoUtilService} from "../audio-video-util.service";
 
 @Injectable({
   providedIn: 'root'
@@ -37,7 +38,7 @@ export class ZoomService extends AudioVideoService {
   private stream: any;
 
   public constructor(
-    private userService: UserService,
+    private audioVideoUtilService: AudioVideoUtilService,
     private connectionHandleService: ConnectionHandleService,
     private httpClient: HttpClient,
     private store: Store
@@ -49,8 +50,9 @@ export class ZoomService extends AudioVideoService {
   /** zoom client creation, getting jwt token, initialize client */
   public override async init(): Promise<void> {
     this.client = ZoomVideo.createClient();
+    const roomName: string = this.audioVideoUtilService.buildMainRoomName();
 
-    const connectionOptionsPromise: Promise<void> = this.getConnectionOptions()
+    const connectionOptionsPromise: Promise<void> = this.getConnectionOptions(roomName)
       .then((connectionOptions: ConnectionOptions): void => {
         this.connectionOptions = connectionOptions;
       });
@@ -106,7 +108,7 @@ export class ZoomService extends AudioVideoService {
     this.remoteUserVideoElements[userId] = element;
 
     if (remoteUser.audioVideoUser.isVideoOn) {
-      await this.renderUserVideo(remoteUser.audioVideoUser.id);
+      await this.startRemoteVideo(remoteUser.audioVideoUser.id);
     }
   }
   public override async removeRemoteUserVideoElement(userId: UserId): Promise<void> {
@@ -212,26 +214,14 @@ export class ZoomService extends AudioVideoService {
     await this.stream.unmuteUserAudioLocally(remoteUser.audioVideoUser.id);
   }
 
-  /** if user is logged in, get connection options from BE */
-  private getConnectionOptions(): Promise<ConnectionOptions> {
-    if (!this.classroom) {
-      return Promise.reject('Classroom is not initialized');
-    }
-
-    if (!this.userService.isLoggedIn()) {
-      return Promise.reject('User is not logged in');
-    }
-
+  private getConnectionOptions(roomName: string): Promise<ConnectionOptions> {
     return lastValueFrom(this.httpClient.get<ConnectionOptions>(
-      'http://localhost:8090/audio-video/main-session/connection-options',
-      {
-        params: {
-          roomNumber: this.classroom.roomNumber,
-          groupId: 0,
-          username: this.localUser.username
-        }
+      '/api/audio-video/connection-options', {
+      params: {
+        roomName,
+        username: this.localUser.username
       }
-    ));
+    }));
   }
 
   private registerEventListeners(): void  {
@@ -247,11 +237,11 @@ export class ZoomService extends AudioVideoService {
 
     this.client.on('peer-video-state-change', (payload: { action: "Start" | "Stop"; userId: number }): void => {
       if (payload.action === 'Start') {
-        this.renderUserVideo(payload.userId + '')
+        this.startRemoteVideo(payload.userId + '')
           .then(() => {console.log("rendered")})
           .catch(() => {console.log("not rendered")});
       } else if (payload.action === 'Stop') {
-        this.stopUserVideo(payload.userId + '')
+        this.stopRemoteVideo(payload.userId + '')
           .then(() => {console.log("render stopped")})
           .catch(() => {console.log("render didn't stop")});
       }
@@ -259,7 +249,7 @@ export class ZoomService extends AudioVideoService {
   }
 
   /** render remote user video when joined to zoom or when user turn on video */
-  private async renderUserVideo(userId: AudioVideoUserId): Promise<void> {
+  private async startRemoteVideo(userId: AudioVideoUserId): Promise<void> {
     if (!this.stream) {
       throw Error(`Trying to turn on ${userId} User video. Stream is not found`);
     }
@@ -280,7 +270,7 @@ export class ZoomService extends AudioVideoService {
   }
 
   /** stop remote user video when user turn off video */
-  private async stopUserVideo(userId: AudioVideoUserId): Promise<void> {
+  private async stopRemoteVideo(userId: AudioVideoUserId): Promise<void> {
     if (!this.stream) {
       throw Error(`Trying to turn off ${userId} User video. Stream is not found`);
     }
@@ -341,7 +331,7 @@ export class ZoomService extends AudioVideoService {
       }
 
       if (participant.bVideoOn) {
-        this.renderUserVideo(participant.userId + '');
+        this.startRemoteVideo(participant.userId + '');
       }
     });
   }

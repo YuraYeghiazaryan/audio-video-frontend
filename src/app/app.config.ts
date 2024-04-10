@@ -3,7 +3,7 @@ import {provideRouter} from '@angular/router';
 
 import {routes} from './app.routes';
 import {ClassroomService} from "./service/classroom.service";
-import {provideHttpClient} from "@angular/common/http";
+import {HTTP_INTERCEPTORS, provideHttpClient, withInterceptors, withInterceptorsFromDi} from "@angular/common/http";
 import {NgxsModule} from "@ngxs/store";
 import {ClassroomState} from "./state/classroom.state";
 import {LocalUserState} from "./state/local-user.state";
@@ -12,6 +12,7 @@ import {AudioVideoService} from "./service/audio-video/audio-video.service";
 import {GameModeState} from "./state/game-mode.state";
 import {ChimeService} from "./service/audio-video/provider/chime/chime.service";
 import {PrivateTalkState} from "./state/private-talk.state";
+import {InterceptorService} from "./service/interceptor.service";
 
 export function initializeApp(classroomService: ClassroomService): () => Promise<void> {
   return (): Promise<void> => {
@@ -21,11 +22,6 @@ export function initializeApp(classroomService: ClassroomService): () => Promise
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    {
-      provide: AudioVideoService,
-      useClass: ChimeService
-      // useClass: ZoomService
-    },
     importProvidersFrom(
       NgxsModule.forRoot([
         ClassroomState,
@@ -35,6 +31,9 @@ export const appConfig: ApplicationConfig = {
         PrivateTalkState
       ])
     ),
+    provideHttpClient(
+      withInterceptorsFromDi()
+    ),
     provideRouter(routes),
     {
       provide: APP_INITIALIZER,
@@ -42,6 +41,15 @@ export const appConfig: ApplicationConfig = {
       multi: true,
       deps: [ClassroomService],
     },
-    provideHttpClient(),
+    {
+      provide: HTTP_INTERCEPTORS,
+      multi: true,
+      useClass: InterceptorService
+    },
+    {
+      provide: AudioVideoService,
+      useClass: ChimeService
+      // useClass: ZoomService
+    },
   ]
 };

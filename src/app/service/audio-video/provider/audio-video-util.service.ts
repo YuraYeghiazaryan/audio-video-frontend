@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import {Store} from "@ngxs/store";
-import {Classroom} from "../../../../model/classroom";
-import {ClassroomState} from "../../../../state/classroom.state";
+import {Classroom} from "../../../model/classroom";
+import {ClassroomState} from "../../../state/classroom.state";
 
 @Injectable({
   providedIn: 'root'
 })
-export class ChimeUtilService {
+export class AudioVideoUtilService {
   private classroom: Classroom = ClassroomState.defaults;
 
   constructor(
