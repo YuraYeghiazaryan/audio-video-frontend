@@ -26,8 +26,14 @@ export class WebSocketService {
 
   public connect(url: string): Observable<boolean> {
     return new Observable<boolean>((observer: Subscriber<boolean>): void => {
+      const protocol: string = window.location.protocol
+        .replace('http', 'ws')
+        .replace('https', 'wss');
+
+      const host: string = window.location.host;
+
       this.stompClient = new Client({
-        brokerURL: `ws://localhost:8090${url}`,
+        brokerURL: `${protocol}//${host}${url}`,
         onConnect: (): void => {
           this.onConnected$.emit();
           observer.next(true);
