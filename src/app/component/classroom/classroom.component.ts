@@ -71,7 +71,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
 
     /* connect to VCR web socket */
     const websocketConnectPromise: Promise<boolean> = new Promise<boolean>((resolve, reject): void => {
-      this.websocketService.connect('/websocket')
+      this.websocketService.connect('/api/websocket')
         .pipe(catchError((error: HttpErrorResponse): ObservableInput<any> => {
           reject(error);
           return throwError(() => new Error('Something bad happened, please try again later.'));
