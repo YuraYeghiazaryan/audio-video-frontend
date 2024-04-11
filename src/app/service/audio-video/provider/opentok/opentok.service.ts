@@ -20,14 +20,16 @@ import SetVideoVisible = RemoteUsersAction.SetVideoVisible;
 
 export interface Meeting {
   session: OT.Session;
-  publisher?: OT.Publisher,
+  publisher?: OT.Publisher;
   token: string;
 }
 
 export interface VideoElement {
   htmlElement?: HTMLVideoElement;
-  subscriber?: OT.Subscriber;
   stream?: Stream;
+}
+export interface RemoteUserVideoElement extends VideoElement {
+  subscriber?: OT.Subscriber;
 }
 
 @Injectable({
@@ -38,8 +40,8 @@ export class OpentokService extends AudioVideoService {
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
 
-  private localUserVideoElement: VideoElement | undefined = undefined;
-  private remoteUserVideoElements: {[key: AudioVideoUserId]: VideoElement} = {};
+  private localUserVideoElement?: VideoElement;
+  private remoteUserVideoElements: {[key: AudioVideoUserId]: RemoteUserVideoElement} = {};
 
   private meeting?: Meeting;
 
@@ -70,7 +72,7 @@ export class OpentokService extends AudioVideoService {
     return new Promise((resolve, reject): void => {
 
       if (this.localUserVideoElement?.htmlElement) {
-        this.initPublisher(this.localUserVideoElement.htmlElement);
+        this.initPublisher();
       }
 
       this.listenClientEvents();
@@ -143,12 +145,12 @@ export class OpentokService extends AudioVideoService {
   }
 
   public override async startLocalVideo(): Promise<void> {
-    if (!this.meeting?.publisher || !this.localUserVideoElement?.htmlElement) {
+    if (!this.localUserVideoElement?.htmlElement) {
       throw Error();
     }
 
     if (!this.meeting?.publisher) {
-      await this.initPublisher(this.localUserVideoElement?.htmlElement);
+      await this.initPublisher();
     }
 
     this.meeting?.publisher?.publishVideo(true);
@@ -156,11 +158,7 @@ export class OpentokService extends AudioVideoService {
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(true));
   }
   public override async stopLocalVideo(): Promise<void> {
-    if (!this.meeting?.publisher) {
-      throw Error();
-    }
-
-    this.meeting.publisher?.publishVideo(false);
+    this.meeting?.publisher?.publishVideo(false);
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(false));
   }
@@ -216,13 +214,12 @@ export class OpentokService extends AudioVideoService {
   private async muteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
     this.remoteUserVideoElements[remoteUser.audioVideoUser.id]?.subscriber?.subscribeToAudio(false);
   }
-
   private async unmuteUserAudioLocally(remoteUser: RemoteUser): Promise<void> {
     this.remoteUserVideoElements[remoteUser.audioVideoUser.id]?.subscriber?.subscribeToAudio(true);
   }
 
   private async startRemoteVideo(userId: AudioVideoUserId): Promise<void> {
-    const remoteUserVideoElement: VideoElement | null = this.remoteUserVideoElements[userId];
+    const remoteUserVideoElement: RemoteUserVideoElement | null = this.remoteUserVideoElements[userId];
 
     if (!this.meeting || !remoteUserVideoElement?.htmlElement || !remoteUserVideoElement?.stream) {
       return;
@@ -312,9 +309,8 @@ export class OpentokService extends AudioVideoService {
     });
   }
 
-  private async initPublisher(htmlElement: HTMLElement): Promise<void> {
+  private async initPublisher(): Promise<void> {
     return new Promise<void>((resolve, reject): void => {
-
       if (!this.meeting) {
         reject();
         return;
@@ -328,8 +324,7 @@ export class OpentokService extends AudioVideoService {
           echoCancellation: true,
           publishVideo: true,
           publishAudio: true,
-        },
-        (error?: OT.OTError): void => {
+        }, (error?: OT.OTError): void => {
           if (error) {
             reject(error);
           }
