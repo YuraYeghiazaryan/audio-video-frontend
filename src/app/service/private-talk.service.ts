@@ -30,7 +30,7 @@ export class PrivateTalkService {
     this.store.dispatch(new PrivateTalkAction.StartPrivateTalk());
 
     if (send) {
-      await this.groupingService.breakRoomIntoGroups(send);
+      await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/private-talk`,
         {
@@ -47,7 +47,7 @@ export class PrivateTalkService {
     this.store.dispatch(new PrivateTalkAction.EndPrivateTalk());
 
     if (send) {
-      await this.groupingService.breakRoomIntoGroups(send);
+      await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/private-talk`,
         {
@@ -67,7 +67,7 @@ export class PrivateTalkService {
     }
 
     if (send) {
-      await this.groupingService.breakRoomIntoGroups(send);
+      await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/add-user-to-private-talk`,
         {
@@ -87,7 +87,7 @@ export class PrivateTalkService {
     }
 
     if (send) {
-      await this.groupingService.breakRoomIntoGroups(send);
+      await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/remove-user-from-private-talk`,
         {

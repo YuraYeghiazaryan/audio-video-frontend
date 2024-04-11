@@ -3,9 +3,9 @@ import {WebSocketService} from "./web-socket.service";
 import {User} from "../model/user";
 import {UserId} from "../model/types";
 import {UserEventHandleService} from "./event-handler/user-event-handle.service";
-import {TeamsDAO} from "../state/game-mode.state";
+import {TeamsDTO} from "../state/game-mode.state";
 import {GameModeService} from "./game-mode.service";
-import {TeamDAO} from "../model/team";
+import {TeamDTO} from "../model/team";
 import {LocalUser} from "../model/local-user";
 import {LocalUserState} from "../state/local-user.state";
 import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
@@ -62,7 +62,7 @@ export class MessageHandleService {
     this.userEventHandleService.onUserConnectionChanged(userId, connected);
   }
 
-  private gameModeStateChanged({started, senderId, teams}: { started: boolean, senderId: number, teams?: TeamsDAO }): void {
+  private gameModeStateChanged({started, senderId, teams}: { started: boolean, senderId: number, teams?: TeamsDTO }): void {
     if (this.localUser.id === senderId) {
       return;
     }
@@ -70,7 +70,7 @@ export class MessageHandleService {
     this.gameModeService.endGameMode(false).then((): void => {
       if (started && teams) {
         Object.values(teams)
-          .forEach((team: TeamDAO): void => {
+          .forEach((team: TeamDTO): void => {
             const users: User[] = team.userIds.map((id: number): User => {
               return this.localUser.id === id ? this.localUser : this.remoteUsers[id];
             })
