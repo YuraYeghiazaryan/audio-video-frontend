@@ -1,14 +1,14 @@
 import {Action, State, StateContext} from "@ngxs/store";
 import {Injectable} from "@angular/core";
 import {TeamId, UserId} from "../model/types";
-import {Team, TeamDAO} from "../model/team";
+import {Team, TeamDTO} from "../model/team";
 import produce from "immer";
 
 export interface Teams {
   [key: TeamId]: Team
 }
-export interface TeamsDAO {
-  [key: TeamId]: TeamDAO
+export interface TeamsDTO {
+  [key: TeamId]: TeamDTO
 }
 
 export interface GameMode {

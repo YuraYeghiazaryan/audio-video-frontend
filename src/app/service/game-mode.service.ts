@@ -1,7 +1,7 @@
 import {Injectable} from "@angular/core";
 import {User} from "../model/user";
 import {TeamId, UserId} from "../model/types";
-import {GameMode, GameModeAction, GameModeState, Teams, TeamsDAO} from "../state/game-mode.state";
+import {GameMode, GameModeAction, GameModeState, Teams, TeamsDTO} from "../state/game-mode.state";
 import {Store} from "@ngxs/store";
 import {HttpClient} from "@angular/common/http";
 import {Classroom} from "../model/classroom";
@@ -64,13 +64,13 @@ export class GameModeService {
     this.store.dispatch(new GameModeAction.StartGameMode);
 
     if (send) {
-      await this.groupingService.breakRoomIntoGroups(send);
+      await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/game-mode`,
         {
           senderId: this.localUser.id,
           started: true,
-          teams: this.toTeamsDAO(this.gameMode.teams)
+          teams: this.toTeamsDTO(this.gameMode.teams)
         }
       ));
     }
@@ -82,7 +82,7 @@ export class GameModeService {
     this.store.dispatch(new GameModeAction.EndGameMode);
 
     if (send) {
-      await this.groupingService.breakRoomIntoGroups(send);
+      await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/game-mode`,
         {
@@ -99,7 +99,7 @@ export class GameModeService {
     this.store.dispatch(new GameModeAction.StartTeamTalk());
 
     if (send) {
-      // await this.groupingService.breakRoomIntoGroups(send);
+      //await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/team-talk`,
         {
@@ -116,7 +116,7 @@ export class GameModeService {
     this.store.dispatch(new GameModeAction.EndTeamTalk());
 
     if (send) {
-      // await this.groupingService.breakRoomIntoGroups(send);
+      //await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/team-talk`,
         {
@@ -129,17 +129,17 @@ export class GameModeService {
     // await this.groupingService.updateGroups();
   }
 
-  private toTeamsDAO(teams: Teams): TeamsDAO {
-    const teamsDAO: TeamsDAO = {};
+  private toTeamsDTO(teams: Teams): TeamsDTO {
+    const teamsDTO: TeamsDTO = {};
     Object.values(teams)
       .forEach((team: Team): void => {
-        teamsDAO[team.id] = {
+        teamsDTO[team.id] = {
           ...team,
           userIds: [...team.userIds]
         };
       });
 
-    return teamsDAO;
+    return teamsDTO;
   }
 
   private listenStoreChanges(): void {

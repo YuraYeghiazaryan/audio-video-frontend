@@ -7,7 +7,7 @@ export interface Team {
   userIds: Set<UserId>;
 }
 
-export interface TeamDAO {
+export interface TeamDTO {
   id: TeamId;
   name: string;
   color: string;
