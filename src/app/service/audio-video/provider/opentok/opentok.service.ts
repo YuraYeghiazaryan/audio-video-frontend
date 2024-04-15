@@ -55,6 +55,7 @@ export class OpentokService extends AudioVideoService {
   }
 
 
+  /** Init Session */
   public override async init(): Promise<void> {
     const mainRoomName: string = this.audioVideoUtilService.buildMainRoomName();
 
@@ -68,6 +69,7 @@ export class OpentokService extends AudioVideoService {
     };
   }
 
+  /** Init Publisher, listen events, connect to Session, publish Stream */
   public override async join(): Promise<void> {
     return new Promise((resolve, reject): void => {
 
@@ -262,6 +264,7 @@ export class OpentokService extends AudioVideoService {
     }
   }
 
+  /** get api key,session Id, token from BE*/
   private getConnectionOptions(roomName: string): Promise<ConnectionOptions> {
     return lastValueFrom(this.httpClient.get<ConnectionOptions>(
       '/api/audio-video/connection-options', {
@@ -273,6 +276,7 @@ export class OpentokService extends AudioVideoService {
     }));
   }
 
+  /** Publish Stream, create audioVideoUser object */
   private onJoin(): void {
     if (!this.meeting?.session?.connection?.data || !this.meeting.publisher) {
       throw Error();
@@ -280,7 +284,7 @@ export class OpentokService extends AudioVideoService {
 
     this.meeting.session.publish(this.meeting.publisher);
 
-    /* initialize local zoom state */
+    /* initialize local audioVideoUser state */
     const audioVideoUser: AudioVideoUser = {
       id: this.meeting.session.connection.data,
       joined: true,

@@ -79,7 +79,7 @@ export class ClassroomComponent implements OnInit, OnDestroy {
         .subscribe(resolve);
     });
 
-    /* join to Zoom */
+    /* join to video sdk */
     const audioVideoJoinPromise: Promise<void> = this.audioVideoService.init()
       .then((): Promise<void> => this.audioVideoService.join());
 
