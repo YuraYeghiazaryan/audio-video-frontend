@@ -11,6 +11,7 @@ import {LocalUserState} from "../state/local-user.state";
 import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
 import {Store} from "@ngxs/store";
 import {PrivateTalkService} from "./private-talk.service";
+import {GroupingService} from "./grouping.service";
 
 @Injectable({
   providedIn: 'root'
@@ -24,6 +25,7 @@ export class MessageHandleService {
     private userEventHandleService: UserEventHandleService,
     private gameModeService: GameModeService,
     private privateTalkService: PrivateTalkService,
+    private groupingService: GroupingService,
     private store: Store
   ) {
     this.listenStoreChanges();
@@ -62,44 +64,46 @@ export class MessageHandleService {
     this.userEventHandleService.onUserConnectionChanged(userId, connected);
   }
 
-  private gameModeStateChanged({started, senderId, teams}: { started: boolean, senderId: number, teams?: TeamsDTO }): void {
-    if (this.localUser.id === senderId) {
-      return;
-    }
-
+  private gameModeStateChanged({started, teams}: { started: boolean, senderId: number, teams?: TeamsDTO }): void {
     this.gameModeService.endGameMode(false).then((): void => {
-      if (started && teams) {
+      if (teams) {
         Object.values(teams)
           .forEach((team: TeamDTO): void => {
-            const users: User[] = team.userIds.map((id: number): User => {
-              return this.localUser.id === id ? this.localUser : this.remoteUsers[id];
-            })
-            .filter((user: User): boolean => !!user);
+            const users: User[] = team.userIds
+              .map((id: number): User => {
+                return this.localUser.id === id ? this.localUser : this.remoteUsers[id];
+              })
+              .filter((user: User): boolean => !!user);
 
             this.gameModeService.createTeam(users, team.id, team.name, team.color);
         });
-        this.gameModeService.startGameMode(false).then();
+
+        if (started) {
+          this.gameModeService.startGameMode(false).then((): void => {
+            this.groupingService.updateGroups().then();
+          });
+        } else {
+          this.gameModeService.endGameMode(false).then((): void => {
+            this.groupingService.updateGroups().then();
+          });
+        }
       }
     });
   }
 
   private teamTalkStateChanged({started, senderId}: { started: boolean, senderId: number }): void {
-    if (this.localUser.id === senderId) {
-      return;
-    }
-
     if (started) {
-      this.gameModeService.startTeamTalk(false).then();
+      this.gameModeService.startTeamTalk(false).then((): void => {
+        this.groupingService.updateGroups().then();
+      });
     } else {
-      this.gameModeService.endTeamTalk(false).then();
+      this.gameModeService.endTeamTalk(false).then((): void => {
+        this.groupingService.updateGroups().then();
+      });
     }
   }
 
   private userAddedToPrivateTalk({userId, senderId}: { userId: number, senderId: number }): void {
-    if (this.localUser.id === senderId) {
-      return;
-    }
-
     let user: User | undefined = undefined;
 
     if (userId === this.localUser.id) {
@@ -110,13 +114,12 @@ export class MessageHandleService {
       return;
     }
 
-    this.privateTalkService.addUserToPrivateTalk(user, false).then();
+    this.privateTalkService.addUserToPrivateTalk(user, false).then((): void => {
+      this.groupingService.updateGroups().then();
+    });
   }
 
   private userRemovedFromPrivateTalk({userId, senderId}: { userId: number, senderId: number }): void {
-    if (this.localUser.id === senderId) {
-      return;
-    }
 
     let user: User | undefined = undefined;
 
@@ -128,18 +131,20 @@ export class MessageHandleService {
       return;
     }
 
-    this.privateTalkService.removeUserFromPrivateTalk(user, false).then();
+    this.privateTalkService.removeUserFromPrivateTalk(user, false).then((): void => {
+      this.groupingService.updateGroups().then();
+    });
   }
 
   private privateTalkStateChanged({started, senderId}: { started: boolean, senderId: number }): void {
-    if (this.localUser.id === senderId) {
-      return;
-    }
-
     if (started) {
-      this.privateTalkService.startPrivateTalk(false).then();
+      this.privateTalkService.startPrivateTalk(false).then((): void => {
+        this.groupingService.updateGroups().then();
+      });
     } else {
-      this.privateTalkService.endPrivateTalk(false).then();
+      this.privateTalkService.endPrivateTalk(false).then((): void => {
+        this.groupingService.updateGroups().then();
+      });
     }
   }
 

@@ -60,10 +60,6 @@ export class RemoteUserComponent implements AfterViewInit, OnDestroy {
     }
 
     this.privateTalkService.addUserToPrivateTalk(this.remoteUser).then();
-
-    if (this.localUser.role === Role.TEACHER && !this.privateTalk.userIds.has(this.localUser.id)) {
-      this.privateTalkService.addUserToPrivateTalk(this.localUser).then();
-    }
   }
   public excludeFromPrivateTalk(): void {
     if (!this.remoteUser) {

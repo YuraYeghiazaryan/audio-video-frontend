@@ -129,7 +129,11 @@ export class ClassroomComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected createDemoTeams(): void {
+  protected endGameMode(): void {
+    this.gameModeService.endGameMode().then();
+  }
+
+  protected startGameMode(): void {
     const colors: any = {};
     colors[0] = '#33ff00';
     colors[2] = '#ff2015';
