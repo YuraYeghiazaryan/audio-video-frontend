@@ -234,6 +234,7 @@ export class OpentokService extends AudioVideoService {
         insertDefaultUI: false,
         subscribeToVideo: true,
         subscribeToAudio: true,
+        testNetwork: true
       },
       (error?: OT.OTError): void => {
         if (error) {
@@ -299,7 +300,13 @@ export class OpentokService extends AudioVideoService {
     this.meeting?.session.on('streamCreated', (event: OT.Event<'streamCreated', OT.Session> & {stream: Stream}): void => {
       const audioVideoUserId: AudioVideoUserId = event.stream.connection.data;
 
-      this.remoteUserVideoElements[audioVideoUserId].stream = event.stream;
+      if (this.remoteUserVideoElements[audioVideoUserId]) {
+        this.remoteUserVideoElements[audioVideoUserId].stream = event.stream;
+      } else {
+        this.remoteUserVideoElements[audioVideoUserId] = {
+          stream: event.stream
+        };
+      }
 
       this.startRemoteVideo(audioVideoUserId).then();
     });
