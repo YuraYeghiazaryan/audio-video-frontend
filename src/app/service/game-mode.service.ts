@@ -99,7 +99,7 @@ export class GameModeService {
     this.store.dispatch(new GameModeAction.StartTeamTalk());
 
     if (send) {
-      //await this.groupingService.sendBreakRoomIntoGroups();
+      await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/team-talk`,
         {
@@ -109,14 +109,14 @@ export class GameModeService {
       ));
     }
 
-    // await this.groupingService.updateGroups();
+    await this.groupingService.updateGroups();
   }
 
   public async endTeamTalk(send: boolean = true): Promise<void> {
     this.store.dispatch(new GameModeAction.EndTeamTalk());
 
     if (send) {
-      //await this.groupingService.sendBreakRoomIntoGroups();
+      await this.groupingService.sendBreakRoomIntoGroups();
       await lastValueFrom(this.httpClient.post<void>(
         `/api/classroom/team-talk`,
         {
@@ -126,7 +126,7 @@ export class GameModeService {
       ));
     }
 
-    // await this.groupingService.updateGroups();
+    await this.groupingService.updateGroups();
   }
 
   private toTeamsDTO(teams: Teams): TeamsDTO {

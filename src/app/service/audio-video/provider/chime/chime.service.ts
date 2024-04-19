@@ -25,6 +25,7 @@ import {RemoteUser} from "../../../../model/remote-user";
 import {AudioVideoUser} from "../../../../model/user";
 import {AudioVideoUtilService} from "../audio-video-util.service";
 import MeetingSessionStatus from "amazon-chime-sdk-js/build/meetingsession/MeetingSessionStatus";
+import AudioVideoObserver from "amazon-chime-sdk-js/build/audiovideoobserver/AudioVideoObserver";
 
 interface VideoTile {
   id?: number;
@@ -68,7 +69,45 @@ export class ChimeService extends AudioVideoService {
     const mainRoomName: string = this.audioVideoUtilService.buildMainRoomName();
 
     const connectionOptions: ConnectionOptions = await this.getConnectionOptions(mainRoomName);
-    this.meetings.main = await this.createMeetingSession(connectionOptions, 'mainSessionLogger');
+    this.meetings.main = await this.createMeetingSession(
+      connectionOptions,
+      'mainSessionLogger',
+      true,
+      true,
+      true, {
+      audioVideoDidStop: (sessionStatus: MeetingSessionStatus): void => {
+        console.warn(sessionStatus);
+      },
+      videoTileDidUpdate: (tileState: VideoTileState): void => {
+        if (!this.meetings.main?.session?.audioVideo) {
+          throw Error();
+        }
+
+        if (!tileState.boundAttendeeId || !tileState.boundExternalUserId || !tileState.tileId) {
+          return;
+        }
+
+        if (tileState.localTile) {
+          if (!this.localUserVideoTile || !this.localUserVideoTile.htmlElement) {
+            throw Error();
+          }
+
+          this.meetings.main.session.audioVideo.bindVideoElement(tileState.tileId, this.localUserVideoTile.htmlElement);
+        } else {
+          const remoteUserVideoTile: VideoTile | null = this.remoteUserVideoTiles[tileState.boundExternalUserId];
+
+          if (!remoteUserVideoTile) {
+            throw Error();
+          }
+
+          if (tileState.boundVideoStream) {
+            remoteUserVideoTile.mediaStream = tileState.boundVideoStream;
+          }
+
+          this.startRemoteVideo(tileState.boundExternalUserId);
+        }
+      }
+    });
   }
 
   public async join(): Promise<void> {
@@ -82,8 +121,8 @@ export class ChimeService extends AudioVideoService {
     const audioVideoUser: AudioVideoUser = {
       id: this.meetings.main.session.configuration.credentials?.externalUserId + '',
       joined: true,
-      isVideoOn: false,
-      isAudioOn: false,
+      isVideoOn: true,
+      isAudioOn: true,
     };
 
     this.store.dispatch(new LocalUserAction.SetAudioVideoUser(audioVideoUser));
@@ -227,7 +266,13 @@ export class ChimeService extends AudioVideoService {
 
   private async createMeeting(roomName: string, isAudioAvailableForLocalUser: boolean): Promise<Meeting> {
     const connectionOptions: ConnectionOptions = await this.getConnectionOptions(roomName);
-    const meeting: Meeting = await this.createMeetingSession(connectionOptions, `subSessionLogger_${roomName}`, isAudioAvailableForLocalUser);
+    const meeting: Meeting = await this.createMeetingSession(
+      connectionOptions,
+      `subSessionLogger_${roomName}`,
+      isAudioAvailableForLocalUser,
+      isAudioAvailableForLocalUser,
+      false
+    );
     meeting.session.audioVideo.start();
 
     if (this.localUser.audioVideoUser?.isVideoOn) {
@@ -261,7 +306,13 @@ export class ChimeService extends AudioVideoService {
     remoteUserVideoTile.htmlElement.srcObject = null;
   }
 
-  private async createMeetingSession(connectionOptions: ConnectionOptions, loggerName: string, isAudioOn: boolean = true): Promise<Meeting> {
+  private async createMeetingSession(connectionOptions: ConnectionOptions,
+                                     loggerName: string,
+                                     isInputAudioOn: boolean = true,
+                                     isOutputAudioOn: boolean = true,
+                                     isInputVideoOn: boolean = true,
+                                     audioVideoObserver?: AudioVideoObserver): Promise<Meeting> {
+
     const logger: ConsoleLogger = new ConsoleLogger(loggerName, LogLevel.INFO);
     const deviceController: DefaultDeviceController = new DefaultDeviceController(logger, {enableWebAudio: true});
 
@@ -276,44 +327,47 @@ export class ChimeService extends AudioVideoService {
       deviceController
     );
 
-    const audioInputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listAudioInputDevices();
-    const audioOutputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listAudioOutputDevices();
-    const videoInputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listVideoInputDevices();
-
-    const mediaDeviceInfo: MediaDeviceInfo = audioInputDevices[0];
-    meetingSession.audioVideo.realtimeMuteLocalAudio();
-
-    if (mediaDeviceInfo) {
-      let voiceFocusTransformDevice: VoiceFocusTransformDevice | undefined = undefined;
-
-      if (await VoiceFocusDeviceTransformer.isSupported()) {
-        try {
-          const voiceFocusDeviceTransformer: VoiceFocusDeviceTransformer = await VoiceFocusDeviceTransformer.create({variant: 'auto'});
-          voiceFocusTransformDevice = await voiceFocusDeviceTransformer.createTransformDevice(mediaDeviceInfo.deviceId);
-        } catch (cause) {}
-      }
-
-      if (voiceFocusTransformDevice) {
-        await meetingSession.audioVideo.startAudioInput(voiceFocusTransformDevice);
-      } else {
-        console.warn('Voice focus is not supported')
-        await meetingSession.audioVideo.startAudioInput(mediaDeviceInfo.deviceId);
+    if (isOutputAudioOn) {
+      const audioOutputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listAudioOutputDevices();
+      const audioOutputDeviceInfo: MediaDeviceInfo = audioOutputDevices[0];
+      if (audioOutputDeviceInfo) {
+        await meetingSession.audioVideo.chooseAudioOutput(audioOutputDeviceInfo.deviceId);
       }
     }
 
-    const audioOutputDeviceInfo: MediaDeviceInfo = audioOutputDevices[0];
-    if (audioOutputDeviceInfo) {
-      await meetingSession.audioVideo.chooseAudioOutput(audioOutputDeviceInfo.deviceId);
-    }
-
-    const videoInputDeviceInfo: MediaDeviceInfo = videoInputDevices[0];
-    if (videoInputDeviceInfo) {
-      await meetingSession.audioVideo.startVideoInput(videoInputDeviceInfo.deviceId);
+    if (isInputVideoOn) {
+      const videoInputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listVideoInputDevices();
+      const videoInputDeviceInfo: MediaDeviceInfo = videoInputDevices[0];
+      if (videoInputDeviceInfo) {
+        await meetingSession.audioVideo.startVideoInput(videoInputDeviceInfo.deviceId);
+      }
     }
 
     let audioElement: HTMLAudioElement | undefined = undefined;
 
-    if (isAudioOn) {
+    if (isInputAudioOn) {
+
+      const audioInputDevices: MediaDeviceInfo[] = await meetingSession.audioVideo.listAudioInputDevices();
+      const mediaDeviceInfo: MediaDeviceInfo = audioInputDevices[0];
+
+      if (mediaDeviceInfo) {
+        let voiceFocusTransformDevice: VoiceFocusTransformDevice | undefined = undefined;
+
+        if (await VoiceFocusDeviceTransformer.isSupported()) {
+          try {
+            const voiceFocusDeviceTransformer: VoiceFocusDeviceTransformer = await VoiceFocusDeviceTransformer.create({variant: 'auto'});
+            voiceFocusTransformDevice = await voiceFocusDeviceTransformer.createTransformDevice(mediaDeviceInfo.deviceId);
+          } catch (cause) {}
+        }
+
+        if (voiceFocusTransformDevice) {
+          await meetingSession.audioVideo.startAudioInput(voiceFocusTransformDevice);
+        } else {
+          console.warn('Voice focus is not supported')
+          await meetingSession.audioVideo.startAudioInput(mediaDeviceInfo.deviceId);
+        }
+      }
+
       audioElement = document.createElement('audio')
       document.body.appendChild(audioElement);
       await meetingSession.audioVideo.bindAudioElement(audioElement);
@@ -323,40 +377,9 @@ export class ChimeService extends AudioVideoService {
       console.log(`Attendee ID: ${presentAttendeeId} Present: ${present}`);
     });
 
-    meetingSession.audioVideo.addObserver({
-      audioVideoDidStop: (sessionStatus: MeetingSessionStatus): void => {
-        console.warn(sessionStatus);
-      },
-      videoTileDidUpdate: (tileState: VideoTileState): void => {
-        if (!meetingSession?.audioVideo) {
-          throw Error();
-        }
-
-        if (!tileState.boundAttendeeId || !tileState.boundExternalUserId || !tileState.tileId) {
-          return;
-        }
-
-        if (tileState.localTile) {
-          if (!this.localUserVideoTile || !this.localUserVideoTile.htmlElement) {
-            throw Error();
-          }
-
-          meetingSession.audioVideo.bindVideoElement(tileState.tileId, this.localUserVideoTile.htmlElement);
-        } else {
-          const remoteUserVideoTile: VideoTile | null = this.remoteUserVideoTiles[tileState.boundExternalUserId];
-
-          if (!remoteUserVideoTile) {
-            throw Error();
-          }
-
-          if (tileState.boundVideoStream) {
-            remoteUserVideoTile.mediaStream = tileState.boundVideoStream;
-          }
-
-          this.startRemoteVideo(tileState.boundExternalUserId);
-        }
-      }
-    });
+    if (audioVideoObserver) {
+      meetingSession.audioVideo.addObserver(audioVideoObserver);
+    }
 
     return {
       session: meetingSession,

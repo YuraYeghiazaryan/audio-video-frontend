@@ -49,8 +49,8 @@ export class GroupingService {
   }
 
   public buildGroups(): Groups {
-    if (!this.gameMode.isStarted && !this.privateTalk.isStarted) {
-      return {};
+    if (!this.gameMode.isTeamTalkStarted && !this.privateTalk.isStarted) {
+      throw Error();
     }
 
     const remoteUsersIds: UserId[] = Object.keys(this.remoteUsers).map((id: string): UserId => parseInt(id));
@@ -61,7 +61,7 @@ export class GroupingService {
     const mainRoomUserIds: Set<UserId> = new Set<UserId>(remoteUsersIds).add(this.localUser.id);
     const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
 
-    if (this.gameMode.isStarted) {
+    if (this.gameMode.isTeamTalkStarted) {
       this.updateGroupsForTeamTalk(groups, mainRoomUserIds, isLocalUserInAnyTeam);
     }
 
@@ -75,7 +75,7 @@ export class GroupingService {
   }
 
   public async sendBreakRoomIntoGroups(): Promise<void> {
-    if (!this.privateTalk.isStarted && !this.gameMode.isStarted) {
+    if (!this.privateTalk.isStarted && !this.gameMode.isTeamTalkStarted) {
       return;
     }
 
@@ -108,7 +108,7 @@ export class GroupingService {
   }
 
   public async updateGroups(): Promise<void> {
-    if (!this.privateTalk.isStarted && !this.gameMode.isStarted) {
+    if (!this.privateTalk.isStarted && !this.gameMode.isTeamTalkStarted) {
       return;
     }
 
