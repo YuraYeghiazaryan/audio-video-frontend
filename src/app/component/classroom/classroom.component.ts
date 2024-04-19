@@ -22,6 +22,8 @@ import {RemoteUserComponent} from "./users/remote-user/remote-user.component";
 import {LocalUserComponent} from "./users/local-user/local-user.component";
 import {Team} from "../../model/team";
 import {RolesPipe} from "../../pipe/roles.pipe";
+import {UserTeamPipe} from "../../pipe/user-team.pipe";
+import {IsLocalUserTeamPipe} from "../../pipe/is-local-user-team.pipe";
 
 @Component({
   selector: 'app-classroom',
@@ -33,7 +35,9 @@ import {RolesPipe} from "../../pipe/roles.pipe";
     KeyValuePipe,
     RemoteUserComponent,
     LocalUserComponent,
-    RolesPipe
+    RolesPipe,
+    UserTeamPipe,
+    IsLocalUserTeamPipe
   ],
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.css'
@@ -51,7 +55,6 @@ export class ClassroomComponent implements OnInit, OnDestroy {
   constructor(
     protected userService: UserService,
     private audioVideoService: AudioVideoService,
-    private gameModeService: GameModeService,
     private websocketService: WebSocketService,
     private messageHandleServiceService: MessageHandleService,
     private httpClient: HttpClient,
@@ -125,56 +128,9 @@ export class ClassroomComponent implements OnInit, OnDestroy {
       if (this.gameMode.isStarted) {
         this.localUserTeams = Object.values(this.gameMode.teams)
           .filter((team: Team): boolean => team.userIds.has(this.localUser.id));
+      } else {
+        this.localUserTeams = [];
       }
     });
-  }
-
-  protected endGameMode(): void {
-    this.gameModeService.endGameMode().then();
-  }
-
-  protected startGameMode(): void {
-    const colors: any = {};
-    colors[0] = '#33ff00';
-    colors[2] = '#ff2015';
-    colors[4] = '#1100f2';
-    colors[5] = '#ee00ff';
-    colors[1] = '#ff8800';
-    colors[3] = '#00ff99';
-
-    let teamId: TeamId = 0;
-
-    const users: User[] = Object.values(this.remoteUsers);
-    users.push(this.localUser);
-
-    const teachers: User[] = users.filter((user: User): boolean => user.role === Role.TEACHER);
-    const students: User[] = users.filter((user: User): boolean => user.role === Role.STUDENT);
-
-    students.reduce((result: User[][], value: User, index: number, array: User[]): User[][] => {
-      if (index % 2 === 0) {
-        result.push(array.slice(index, index + 2));
-      }
-
-      return result;
-    }, []).forEach((users: User[]): void => {
-      if (users.length === 0) {
-        return;
-      }
-
-      const teamMembers: User[] = Object.assign([], users);
-      teamMembers.push(...teachers);
-
-      this.gameModeService.createTeam(teamMembers, teamId, `team_${teamId}`, colors[teamId]);
-      teamId++;
-    });
-    this.gameModeService.startGameMode().then();
-  }
-
-  protected toggleTeamTalk(): void {
-    if (this.gameMode.isTeamTalkStarted) {
-      this.gameModeService.endTeamTalk().then();
-    } else {
-      this.gameModeService.startTeamTalk().then();
-    }
   }
 }

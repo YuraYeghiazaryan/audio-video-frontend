@@ -223,7 +223,8 @@ export class GameModeState {
   public endGameMode({patchState}: StateContext<GameMode>): void {
     patchState({
       isStarted: false,
-      isTeamTalkStarted: false
+      isTeamTalkStarted: false,
+      teams: []
     })
   }
 

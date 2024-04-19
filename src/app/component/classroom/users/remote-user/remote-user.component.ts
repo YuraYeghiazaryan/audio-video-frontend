@@ -8,6 +8,7 @@ import {Store} from "@ngxs/store";
 import {Role} from "../../../../model/user";
 import {PrivateTalkService} from "../../../../service/private-talk.service";
 import {PrivateTalk, PrivateTalkState} from "../../../../state/private-talk.state";
+import {Team} from "../../../../model/team";
 
 @Component({
   selector: 'app-remote-user',
@@ -21,6 +22,8 @@ import {PrivateTalk, PrivateTalkState} from "../../../../state/private-talk.stat
 export class RemoteUserComponent implements AfterViewInit, OnDestroy {
   @Input()
   public remoteUser: RemoteUser | undefined = undefined;
+  @Input()
+  public team: Team | undefined = undefined;
 
   @ViewChild("mediaWrapper")
   protected mediaWrapper: ElementRef<HTMLVideoElement> | undefined = undefined;
