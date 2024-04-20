@@ -222,7 +222,9 @@ export class GameModeState {
   @Action(GameModeAction.EndGameMode)
   public endGameMode({patchState}: StateContext<GameMode>): void {
     patchState({
-      isStarted: false
+      isStarted: false,
+      isTeamTalkStarted: false,
+      teams: []
     })
   }
 

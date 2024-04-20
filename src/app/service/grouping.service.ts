@@ -48,18 +48,14 @@ export class GroupingService {
     this.listenStoreChanges();
   }
 
-  public buildGroups(): Groups {
-    if (!this.gameMode.isTeamTalkStarted && !this.privateTalk.isStarted) {
-      throw Error();
-    }
-
+  private buildGroups(): Groups {
     const remoteUsersIds: UserId[] = Object.keys(this.remoteUsers).map((id: string): UserId => parseInt(id));
 
     const groups: Groups = {};
 
     /* should be users set, which are not in any Team */
     const mainRoomUserIds: Set<UserId> = new Set<UserId>(remoteUsersIds).add(this.localUser.id);
-    const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam();
+    const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam() && this.gameMode.isTeamTalkStarted;
 
     if (this.gameMode.isTeamTalkStarted) {
       this.updateGroupsForTeamTalk(groups, mainRoomUserIds, isLocalUserInAnyTeam);
@@ -75,10 +71,6 @@ export class GroupingService {
   }
 
   public async sendBreakRoomIntoGroups(): Promise<void> {
-    if (!this.privateTalk.isStarted && !this.gameMode.isTeamTalkStarted) {
-      return;
-    }
-
     const groups: Groups = this.buildGroups();
     const groupsCopy: any = {};
 
@@ -108,10 +100,6 @@ export class GroupingService {
   }
 
   public async updateGroups(): Promise<void> {
-    if (!this.privateTalk.isStarted && !this.gameMode.isTeamTalkStarted) {
-      return;
-    }
-
     await this.audioVideoService.breakRoomIntoGroups(this.buildGroups());
   }
 
@@ -182,7 +170,7 @@ export class GroupingService {
 
     groups.privateTalk = {
       userIds: this.privateTalk.userIds,
-      isAudioAvailableForLocalUser: this.privateTalk.userIds.has(this.localUser.id),
+      isAudioAvailableForLocalUser: this.privateTalk.userIds.has(this.localUser.id) || this.localUser.role === Role.TEACHER,
       isVideoAvailableForLocalUser: false
     };
   }

@@ -34,30 +34,9 @@ export class GameModeService {
     this.addUsersToTeam(teamId, users);
   }
 
-  public addUserToTeam(teamId: TeamId, user: User): void {
-    this.store.dispatch(new GameModeAction.AddUserToTeam(teamId, user.id));
-  }
-
-  public removeUserFromTeam(teamId: TeamId, user: User): void {
-    this.store.dispatch(new GameModeAction.RemoveUserFromTeam(teamId, user.id));
-  }
-
   public addUsersToTeam(teamId: TeamId, users: User[]): void {
     const userIds: UserId[] = users.map((user: User) => user.id);
     this.store.dispatch(new GameModeAction.AddUsersToTeam(teamId, userIds));
-  }
-
-  public removeUsersFromTeam(teamId: TeamId, users: User[]): void {
-    const userIds: UserId[] = users.map((user: User) => user.id);
-    this.store.dispatch(new GameModeAction.RemoveUsersFromTeam(teamId, userIds));
-  }
-
-  public deleteTeam(teamId: TeamId): void {
-    this.store.dispatch(new GameModeAction.DeleteTeam(teamId));
-  }
-
-  public deleteAllTeams(): void {
-    this.store.dispatch(new GameModeAction.DeleteAllTeams());
   }
 
   public async startGameMode(send: boolean = true): Promise<void> {
@@ -74,8 +53,6 @@ export class GameModeService {
         }
       ));
     }
-
-    await this.groupingService.updateGroups();
   }
 
   public async endGameMode(send: boolean = true): Promise<void> {
@@ -91,8 +68,6 @@ export class GameModeService {
         }
       ));
     }
-
-    await this.groupingService.updateGroups();
   }
 
   public async startTeamTalk(send: boolean = true): Promise<void> {
@@ -108,8 +83,6 @@ export class GameModeService {
         }
       ));
     }
-
-    await this.groupingService.updateGroups();
   }
 
   public async endTeamTalk(send: boolean = true): Promise<void> {
@@ -125,8 +98,6 @@ export class GameModeService {
         }
       ));
     }
-
-    await this.groupingService.updateGroups();
   }
 
   private toTeamsDTO(teams: Teams): TeamsDTO {

@@ -1,24 +1,26 @@
-<ng-container *ngIf="remoteUser">
-  <br>
-  <video #mediaWrapper width="200" height="122"></video>
+<span *ngIf="team" [style]="{color: team.color}">{{ team.name }}</span>
+<div [style]="{'border-style': 'solid', 'border-color': team?.color, 'width': 'fit-content', 'margin-bottom': '10px'}">
+  <ng-container *ngIf="remoteUser">
+    <br>
+    <video #mediaWrapper width="200" height="122"></video>
+    <br>
+    {{ remoteUser.role }} {{ remoteUser.username }} {{ remoteUser.id }}
+    <br>
 
-  <br>
-  {{ remoteUser.role }} {{ remoteUser.username }} {{ remoteUser.id }}
-  <br>
+    <ng-container *ngIf="localUser.role === Role.TEACHER && remoteUser.role === Role.STUDENT">
+      <ng-container *ngIf="privateTalk.userIds.has(remoteUser.id); then inPrivateTalk else notInPrivateTalk"></ng-container>
 
-  <ng-container *ngIf="localUser.role === Role.TEACHER && remoteUser.role === Role.STUDENT">
-    <ng-container *ngIf="privateTalk.userIds.has(remoteUser.id); then inPrivateTalk else notInPrivateTalk"></ng-container>
+      <ng-template #notInPrivateTalk>
+        <button (click)="includeToPrivateTalk()">
+          Include to private talk
+        </button>
+      </ng-template>
 
-    <ng-template #notInPrivateTalk>
-      <button (click)="includeToPrivateTalk()">
-        Include to private talk
-      </button>
-    </ng-template>
-
-    <ng-template #inPrivateTalk>
-      <button (click)="excludeFromPrivateTalk()">
-        Exclude from private talk
-      </button>
-    </ng-template>
+      <ng-template #inPrivateTalk>
+        <button (click)="excludeFromPrivateTalk()">
+          Exclude from private talk
+        </button>
+      </ng-template>
+    </ng-container>
   </ng-container>
-</ng-container>
+</div>

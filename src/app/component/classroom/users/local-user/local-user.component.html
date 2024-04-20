@@ -1,14 +1,31 @@
-<div *ngIf="localUser">
-  <video #mediaWrapper width="200" height="122"></video>
-  <br>
-  {{ localUser.role }} {{ localUser.username }} {{ localUser.id }}
-  <br>
+<span *ngIf="team" [style]="{color: team.color}">{{ team.name }}</span>
+<div [style]="{'border-style': 'solid', 'border-color': team?.color, 'width': 'fit-content', 'margin-bottom': '10px'}">
+  <div *ngIf="localUser.audioVideoUser">
+    <video #mediaWrapper width="200" height="122"></video>
+    <br>
+    {{ localUser.role }} {{ localUser.username }} {{ localUser.id }}
+    <br>
+  </div>
+
+  <button (click)="toggleVideo()" [disabled]="!localUser.audioVideoUser?.joined">
+    {{ this.localUser.audioVideoUser?.isVideoOn ? 'Off Video' : 'On Video' }}
+  </button>
+
+  <button (click)="toggleAudio()" [disabled]="!localUser.audioVideoUser?.joined">
+    {{ this.localUser.audioVideoUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
+  </button>
+
+  <ng-container *ngIf="localUser.role === Role.TEACHER">
+    <button *ngIf="gameMode.isStarted" (click)="endGameMode()">
+      End Game mode
+    </button>
+    <button *ngIf="!gameMode.isStarted" (click)="startGameMode()">
+      Start Game mode
+    </button>
+
+    <button *ngIf="this.gameMode.isStarted" (click)="toggleTeamTalk()">
+      {{ gameMode.isTeamTalkStarted ? 'End' : 'Start' }} team talk
+    </button>
+  </ng-container>
+
 </div>
-
-<button (click)="toggleVideo()" [disabled]="!localUser.audioVideoUser?.joined">
-  {{ this.localUser.audioVideoUser?.isVideoOn ? 'Off Video' : 'On Video' }}
-</button>
-
-<button (click)="toggleAudio()" [disabled]="!localUser.audioVideoUser?.joined">
-  {{ this.localUser.audioVideoUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
-</button>
