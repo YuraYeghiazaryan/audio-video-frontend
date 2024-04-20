@@ -7,7 +7,7 @@
 <div id="remote-users">
   <div *ngFor="let remoteUser of (this.remoteUsers | roles: Role.STUDENT | filterOnlineUsers)">
     <app-remote-user
-      *ngIf="!gameMode.isTeamTalkStarted || (gameMode.teams | isLocalUserTeam : remoteUser.id)"
+      [hidden]="gameMode.isTeamTalkStarted && !(gameMode.teams | isLocalUserTeam : remoteUser.id) && localUser.role !== Role.TEACHER"
       [remoteUser]="remoteUser"
       [team]="(gameMode.teams | userTeam : remoteUser.id)">
     </app-remote-user>

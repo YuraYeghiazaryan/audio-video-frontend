@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {AudioVideoService} from "../../audio-video.service";
 import {Group, Groups} from '../../../grouping.service';
-import OT, {Stream} from '@opentok/client';
+import OT, {Publisher, Stream} from '@opentok/client';
 import {ConnectionOptions} from "../../../../model/opentok/connection-options";
 import {lastValueFrom} from "rxjs";
 import {AudioVideoUtilService} from "../audio-video-util.service";
@@ -15,8 +15,6 @@ import {AudioVideoUserId, UserId} from "../../../../model/types";
 import {AudioVideoUser} from "../../../../model/user";
 import {RemoteUser} from "../../../../model/remote-user";
 import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../../../../state/remote-users.state";
-import SetAudioListenable = RemoteUsersAction.SetAudioListenable;
-import SetVideoVisible = RemoteUsersAction.SetVideoVisible;
 
 export interface Meeting {
   session: OT.Session;
@@ -26,10 +24,13 @@ export interface Meeting {
 
 export interface VideoElement {
   htmlElement?: HTMLVideoElement;
-  stream?: Stream;
 }
 export interface RemoteUserVideoElement extends VideoElement {
   subscriber?: OT.Subscriber;
+  stream?: Stream;
+}
+export interface LocalUserVideoElement extends VideoElement {
+  mediaProvider?: MediaProvider;
 }
 
 @Injectable({
@@ -40,7 +41,7 @@ export class OpentokService extends AudioVideoService {
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
 
-  private localUserVideoElement?: VideoElement;
+  private localUserVideoElement: LocalUserVideoElement = {};
   private remoteUserVideoElements: {[key: AudioVideoUserId]: RemoteUserVideoElement} = {};
 
   private meeting?: Meeting;
@@ -73,9 +74,7 @@ export class OpentokService extends AudioVideoService {
   public override async join(): Promise<void> {
     return new Promise((resolve, reject): void => {
 
-      if (this.localUserVideoElement?.htmlElement) {
-        this.initPublisher();
-      }
+      this.initPublisher();
 
       this.listenClientEvents();
 
@@ -101,17 +100,15 @@ export class OpentokService extends AudioVideoService {
   }
 
   public override setLocalUserVideoElement(element: HTMLVideoElement): void {
-    if (this.localUserVideoElement) {
-      this.localUserVideoElement.htmlElement = element;
-    } else {
-      this.localUserVideoElement = {
-        htmlElement: element
-      };
-    }
+    this.localUserVideoElement.htmlElement = element;
 
-    if (!this.localUser.audioVideoUser) {
+    if (!this.localUser.audioVideoUser || !this.localUserVideoElement.htmlElement) {
       return;
     }
+
+    this.localUserVideoElement.htmlElement.srcObject = this.localUserVideoElement.mediaProvider || null;
+    this.localUserVideoElement.htmlElement.muted = true;
+    this.localUserVideoElement.htmlElement.play().then();
 
     if (this.localUser.audioVideoUser.isVideoOn) {
       this.startLocalVideo().then();
@@ -147,14 +144,6 @@ export class OpentokService extends AudioVideoService {
   }
 
   public override async startLocalVideo(): Promise<void> {
-    if (!this.localUserVideoElement?.htmlElement) {
-      throw Error();
-    }
-
-    if (!this.meeting?.publisher) {
-      await this.initPublisher();
-    }
-
     this.meeting?.publisher?.publishVideo(true);
 
     this.store.dispatch(new LocalUserAction.SetIsVideoOn(true));
@@ -180,14 +169,14 @@ export class OpentokService extends AudioVideoService {
     const promises: Promise<void>[] = [];
 
     const allGroups: Group[] = [];
+    if (groups.teamTalk) {
+      allGroups.push(...groups.teamTalk);
+    }
     if (groups.main) {
       allGroups.push(groups.main);
     }
     if (groups.privateTalk) {
       allGroups.push(groups.privateTalk);
-    }
-    if (groups.teamTalk) {
-      allGroups.push(...groups.teamTalk);
     }
 
     allGroups.forEach((group: Group): void => {
@@ -198,9 +187,6 @@ export class OpentokService extends AudioVideoService {
         }
 
         const remoteUser: RemoteUser = this.remoteUsers[userId];
-
-        this.store.dispatch(new SetAudioListenable(remoteUser, group.isAudioAvailableForLocalUser));
-        this.store.dispatch(new SetVideoVisible(remoteUser, group.isVideoAvailableForLocalUser));
 
         if (group.isAudioAvailableForLocalUser) {
           promises.push(this.unmuteUserAudioLocally(remoteUser));
@@ -341,14 +327,11 @@ export class OpentokService extends AudioVideoService {
           }
         });
 
-      this.meeting.publisher.on('videoElementCreated', (event): void => {
-        if (!this.localUserVideoElement?.htmlElement) {
-          return;
-        }
+      this.meeting.publisher.on(
+        'videoElementCreated',
+        (event: OT.Event<'videoElementCreated', Publisher> & { element: HTMLVideoElement | HTMLObjectElement; }): void => {
 
-        this.localUserVideoElement.htmlElement.srcObject = (event.element as HTMLVideoElement).srcObject;
-        this.localUserVideoElement.htmlElement.play();
-        this.localUserVideoElement.htmlElement.muted = true;
+        this.localUserVideoElement.mediaProvider = (event.element as HTMLVideoElement).srcObject || undefined;
       });
 
       resolve();

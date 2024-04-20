@@ -8,11 +8,11 @@
   </div>
 
   <button (click)="toggleVideo()" [disabled]="!localUser.audioVideoUser?.joined">
-    {{ this.localUser.audioVideoUser?.isVideoOn ? 'Off Video' : 'On Video' }}
+    Turn {{ this.localUser.audioVideoUser?.isVideoOn ? 'Off' : 'On' }}  Video
   </button>
 
   <button (click)="toggleAudio()" [disabled]="!localUser.audioVideoUser?.joined">
-    {{ this.localUser.audioVideoUser?.isAudioOn ? 'Off Audio' : 'On Audio' }}
+    Turn {{ this.localUser.audioVideoUser?.isAudioOn ? 'Off ' : 'On' }} Audio
   </button>
 
   <ng-container *ngIf="localUser.role === Role.TEACHER">

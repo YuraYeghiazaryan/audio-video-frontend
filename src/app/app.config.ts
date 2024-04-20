@@ -49,8 +49,8 @@ export const appConfig: ApplicationConfig = {
     },
     {
       provide: AudioVideoService,
-      useClass: ChimeService
-      // useClass: OpentokService
+      // useClass: ChimeService
+      useClass: OpentokService
       // useClass: ZoomService
     },
   ]

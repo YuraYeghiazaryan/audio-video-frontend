@@ -170,7 +170,7 @@ export class GroupingService {
 
     groups.privateTalk = {
       userIds: this.privateTalk.userIds,
-      isAudioAvailableForLocalUser: this.privateTalk.userIds.has(this.localUser.id) || this.localUser.role === Role.TEACHER,
+      isAudioAvailableForLocalUser: this.privateTalk.userIds.has(this.localUser.id),
       isVideoAvailableForLocalUser: false
     };
   }
