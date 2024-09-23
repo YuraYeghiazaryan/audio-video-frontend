@@ -165,7 +165,9 @@ export class GameModeState {
           throw Error(`Team ${teamId} does not exists`);
         }
 
-        userIds.forEach((userId: UserId): Set<UserId> => state.teams[teamId].userIds.add(userId));
+        userIds.forEach((userId: UserId): void => {
+          state.teams[teamId].userIds.add(userId);
+        });
       })
     );
   }

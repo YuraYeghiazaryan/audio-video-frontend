@@ -2,6 +2,7 @@ import {Injectable} from '@angular/core';
 import {Store} from "@ngxs/store";
 import {ClassroomAction} from "../state/classroom.state";
 import {GroupingService} from "./grouping.service";
+import {enableMapSet} from "immer";
 
 @Injectable({
   providedIn: 'root'
@@ -16,6 +17,7 @@ export class ClassroomService {
 
   /** before all. Getting room number */
   public async init(): Promise<void> {
+    enableMapSet();
     const roomNumber: number = await this.getRoomNumber();
     this.store.dispatch(new ClassroomAction.SetRoomNumber(roomNumber));
   }

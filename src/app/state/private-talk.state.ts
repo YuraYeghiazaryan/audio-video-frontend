@@ -9,7 +9,6 @@ export interface PrivateTalk {
 }
 
 export namespace PrivateTalkAction {
-
   export class StartPrivateTalk {
     static readonly type: string = '[private-talk] start Private talk';
     constructor() {}
@@ -53,7 +52,8 @@ export class PrivateTalkState {
   @Action(PrivateTalkAction.EndPrivateTalk)
   public endPrivateTalk({patchState}: StateContext<PrivateTalk>): void {
     patchState({
-      isStarted: false
+      isStarted: false,
+      userIds: new Set<UserId>()
     })
   }
 

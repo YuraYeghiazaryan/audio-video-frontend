@@ -17,7 +17,6 @@ import {RemoteUsers, RemoteUsersState} from "../state/remote-users.state";
 export class PrivateTalkService {
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
-  private classroom: Classroom = ClassroomState.defaults;
   private privateTalk: PrivateTalk = PrivateTalkState.defaults;
 
   constructor(
@@ -130,9 +129,6 @@ export class PrivateTalkService {
     });
     this.store.select(RemoteUsersState).subscribe((remoteUsers: RemoteUsers): void => {
       this.remoteUsers = remoteUsers;
-    });
-    this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
-      this.classroom = classroom;
     });
     this.store.select(PrivateTalkState).subscribe((privateTalk: PrivateTalk): void => {
       this.privateTalk = privateTalk;

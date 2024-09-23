@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit} from '@angular/core';
 import {UserService} from "../../service/user.service";
 import {Router} from "@angular/router";
 import {KeyValuePipe, NgForOf, NgIf} from "@angular/common";
@@ -24,6 +24,7 @@ import {Team} from "../../model/team";
 import {RolesPipe} from "../../pipe/roles.pipe";
 import {UserTeamPipe} from "../../pipe/user-team.pipe";
 import {IsLocalUserTeamPipe} from "../../pipe/is-local-user-team.pipe";
+import {VideoPlayerContainer} from "@zoom/videosdk";
 
 @Component({
   selector: 'app-classroom',
@@ -38,6 +39,9 @@ import {IsLocalUserTeamPipe} from "../../pipe/is-local-user-team.pipe";
     RolesPipe,
     UserTeamPipe,
     IsLocalUserTeamPipe
+  ],
+  schemas: [
+    CUSTOM_ELEMENTS_SCHEMA
   ],
   templateUrl: './classroom.component.html',
   styleUrl: './classroom.component.css'

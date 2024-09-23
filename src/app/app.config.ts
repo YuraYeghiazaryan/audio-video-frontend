@@ -14,6 +14,7 @@ import {ChimeService} from "./service/audio-video/provider/chime/chime.service";
 import {PrivateTalkState} from "./state/private-talk.state";
 import {OpentokService} from "./service/audio-video/provider/opentok/opentok.service";
 import {InterceptorService} from "./service/interceptor.service";
+import {ZoomService} from "./service/audio-video/provider/zoom/zoom.service";
 
 export function initializeApp(classroomService: ClassroomService): () => Promise<void> {
   return (): Promise<void> => {
@@ -50,8 +51,8 @@ export const appConfig: ApplicationConfig = {
     {
       provide: AudioVideoService,
       // useClass: ChimeService
-      useClass: OpentokService
-      // useClass: ZoomService
+      // useClass: OpentokService
+      useClass: ZoomService
     },
   ]
 };

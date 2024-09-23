@@ -14,7 +14,7 @@ import {ClassroomState} from "../../../../state/classroom.state";
 import {AudioVideoUserId, UserId} from "../../../../model/types";
 import {AudioVideoUser} from "../../../../model/user";
 import {RemoteUser} from "../../../../model/remote-user";
-import {RemoteUsers, RemoteUsersAction, RemoteUsersState} from "../../../../state/remote-users.state";
+import {RemoteUsers, RemoteUsersState} from "../../../../state/remote-users.state";
 
 export interface Meeting {
   session: OT.Session;
@@ -295,14 +295,6 @@ export class OpentokService extends AudioVideoService {
       }
 
       this.startRemoteVideo(audioVideoUserId).then();
-    });
-
-    this.meeting?.session.on("videoDisabled", (event: OT.Event<string, any>): void => {
-
-    });
-
-    this.meeting?.session.on("videoEnabled", (event: OT.Event<string, any>): void => {
-
     });
   }
 

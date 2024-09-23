@@ -24,7 +24,7 @@
     "@stomp/stompjs": "^7.0.0",
     "@zoom/videosdk": "^1.10.5",
     "amazon-chime-sdk-js": "^3.20.0",
-    "immer": "^3.3.0",
+    "immer": "9.0.6",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.2"

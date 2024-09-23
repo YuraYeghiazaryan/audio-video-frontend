@@ -35,7 +35,6 @@ export interface Groups {
 export class GroupingService {
   private localUser: LocalUser = LocalUserState.defaults;
   private remoteUsers: RemoteUsers = RemoteUsersState.defaults;
-  private classroom: Classroom = ClassroomState.defaults;
 
   private privateTalk: PrivateTalk = PrivateTalkState.defaults;
   private gameMode: GameMode = GameModeState.defaults;
@@ -46,28 +45,6 @@ export class GroupingService {
     private store: Store
   ) {
     this.listenStoreChanges();
-  }
-
-  private buildGroups(): Groups {
-    const remoteUsersIds: UserId[] = Object.keys(this.remoteUsers).map((id: string): UserId => parseInt(id));
-
-    const groups: Groups = {};
-
-    /* should be users set, which are not in any Team */
-    const mainRoomUserIds: Set<UserId> = new Set<UserId>(remoteUsersIds).add(this.localUser.id);
-    const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam() && this.gameMode.isTeamTalkStarted;
-
-    if (this.gameMode.isTeamTalkStarted) {
-      this.updateGroupsForTeamTalk(groups, mainRoomUserIds, isLocalUserInAnyTeam);
-    }
-
-    this.updateGroupsForMainRoomUsers(groups, mainRoomUserIds, isLocalUserInAnyTeam);
-
-    if (this.privateTalk.isStarted) {
-      this.updateGroupsForPrivateTalk(groups);
-    }
-
-    return groups;
   }
 
   public async sendBreakRoomIntoGroups(): Promise<void> {
@@ -101,6 +78,28 @@ export class GroupingService {
 
   public async updateGroups(): Promise<void> {
     await this.audioVideoService.breakRoomIntoGroups(this.buildGroups());
+  }
+
+  private buildGroups(): Groups {
+    const remoteUsersIds: UserId[] = Object.keys(this.remoteUsers).map((id: string): UserId => parseInt(id));
+
+    const groups: Groups = {};
+
+    /* should be users set, which are not in any Team */
+    const mainRoomUserIds: Set<UserId> = new Set<UserId>(remoteUsersIds).add(this.localUser.id);
+    const isLocalUserInAnyTeam: boolean = this.isLocalUserInAnyTeam() && this.gameMode.isTeamTalkStarted;
+
+    if (this.gameMode.isTeamTalkStarted) {
+      this.updateGroupsForTeamTalk(groups, mainRoomUserIds, isLocalUserInAnyTeam);
+    }
+
+    this.updateGroupsForMainRoomUsers(groups, mainRoomUserIds, isLocalUserInAnyTeam);
+
+    if (this.privateTalk.isStarted) {
+      this.updateGroupsForPrivateTalk(groups);
+    }
+
+    return groups;
   }
 
   /** update groups for students who are in Teams */
@@ -198,16 +197,10 @@ export class GroupingService {
 
     this.store.select(PrivateTalkState).subscribe((privateTalk: PrivateTalk): void => {
       this.privateTalk = privateTalk;
-      // this.updateGroups().then();
     });
 
     this.store.select(GameModeState).subscribe((gameMode: GameMode): void => {
       this.gameMode = gameMode;
-      // this.updateGroups().then();
-    });
-
-    this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
-      this.classroom = classroom;
     });
   }
 }

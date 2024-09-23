@@ -17,7 +17,6 @@ import {GroupingService} from "./grouping.service";
   providedIn: 'root'
 })
 export class GameModeService {
-  private classroom: Classroom = ClassroomState.defaults;
   private gameMode: GameMode = GameModeState.defaults;
   private localUser: LocalUser = LocalUserState.defaults;
 
@@ -114,9 +113,6 @@ export class GameModeService {
   }
 
   private listenStoreChanges(): void {
-    this.store.select(ClassroomState).subscribe((classroom: Classroom): void => {
-      this.classroom = classroom;
-    });
     this.store.select(GameModeState).subscribe((gameMode: GameMode): void => {
       this.gameMode = gameMode;
     });

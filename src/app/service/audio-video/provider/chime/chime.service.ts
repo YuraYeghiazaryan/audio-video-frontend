@@ -240,7 +240,7 @@ export class ChimeService extends AudioVideoService {
       await this.meetings.main?.audioElement?.play();
     } else {
       this.meetings.main?.audioElement?.pause();
-      await this.meetings.main?.session.audioVideo.stopAudioInput();
+      this.meetings.main?.session.audioVideo.stopAudioInput().then();
     }
 
     if (groups.teamTalk) {
@@ -254,31 +254,23 @@ export class ChimeService extends AudioVideoService {
         this.meetings.teamTalk = await this.createMeeting(teamRoomName, true);
 
       } else {
-
         this.meetings.teamTalk?.audioElement?.pause();
         this.meetings.teamTalk?.session.audioVideo.stop();
         this.meetings.teamTalk = undefined;
-
       }
     } else {
-
       this.meetings.teamTalk?.audioElement?.pause();
       this.meetings.teamTalk?.session.audioVideo.stop();
       this.meetings.teamTalk = undefined;
-
     }
 
     if (groups.privateTalk && groups.privateTalk.userIds.has(this.localUser.id) && groups.privateTalk.isAudioAvailableForLocalUser) {
-
       const privateTalkRoomName: string = this.audioVideoUtilService.buildPrivateTalkRoomName();
       this.meetings.privateTalk = await this.createMeeting(privateTalkRoomName, true);
-
     } else {
-
       this.meetings.privateTalk?.audioElement?.pause();
       this.meetings.privateTalk?.session.audioVideo.stop();
       this.meetings.privateTalk = undefined;
-
     }
   }
 
@@ -371,22 +363,22 @@ export class ChimeService extends AudioVideoService {
     const audioInputDevice: MediaDeviceInfo = audioInputDevices[0];
 
     if (isInputAudioOn && audioInputDevice) {
-      // let voiceFocusTransformDevice: VoiceFocusTransformDevice | undefined = undefined;
-      //
-      // if (await VoiceFocusDeviceTransformer.isSupported()) {
-      //   try {
-      //     const voiceFocusDeviceTransformer: VoiceFocusDeviceTransformer = await VoiceFocusDeviceTransformer.create({variant: 'auto'});
-      //     voiceFocusTransformDevice = await voiceFocusDeviceTransformer.createTransformDevice(audioInputDevice.deviceId);
-      //   } catch (cause) {}
-      // }
-      //
-      // if (voiceFocusTransformDevice) {
-      //   await meetingSession.audioVideo.startAudioInput(voiceFocusTransformDevice);
-      // } else {
-      //   console.warn('Voice focus is not supported')
-      //   await meetingSession.audioVideo.startAudioInput(audioInputDevice.deviceId);
-      // }
-      await meetingSession.audioVideo.startAudioInput(audioInputDevice.deviceId);
+      let voiceFocusTransformDevice: VoiceFocusTransformDevice | undefined = undefined;
+
+      if (await VoiceFocusDeviceTransformer.isSupported()) {
+        try {
+          const voiceFocusDeviceTransformer: VoiceFocusDeviceTransformer = await VoiceFocusDeviceTransformer.create({variant: 'auto'});
+          voiceFocusTransformDevice = await voiceFocusDeviceTransformer.createTransformDevice(audioInputDevice.deviceId);
+        } catch (cause) {}
+      }
+
+      if (voiceFocusTransformDevice) {
+        await meetingSession.audioVideo.startAudioInput(voiceFocusTransformDevice);
+      } else {
+        console.warn('Voice focus is not supported')
+        await meetingSession.audioVideo.startAudioInput(audioInputDevice.deviceId);
+      }
+      // await meetingSession.audioVideo.startAudioInput(audioInputDevice.deviceId);
     }
 
     meetingSession.audioVideo.realtimeSubscribeToAttendeeIdPresence((presentAttendeeId: string, present: boolean): void => {

@@ -256,7 +256,8 @@ export class ZoomService extends AudioVideoService {
 
     const remoteUser: RemoteUser = Object.values(this.remoteUsers).find((remoteUser: RemoteUser): boolean => {
       return remoteUser.audioVideoUser.id === userId;
-    })
+    });
+
     if (!remoteUser) {
       return;
     }
