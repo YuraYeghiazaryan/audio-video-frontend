@@ -9,6 +9,7 @@ import {Role} from "../../../../model/user";
 import {PrivateTalkService} from "../../../../service/private-talk.service";
 import {PrivateTalk, PrivateTalkState} from "../../../../state/private-talk.state";
 import {Team} from "../../../../model/team";
+import {ZoomService} from "../../../../service/audio-video/provider/zoom/zoom.service";
 
 @Component({
   selector: 'app-remote-user',
@@ -25,8 +26,10 @@ export class RemoteUserComponent implements AfterViewInit, OnDestroy {
   @Input()
   public team: Team | undefined = undefined;
 
+  protected isCanvas: boolean = this.audioVideoService instanceof ZoomService;
+
   @ViewChild("mediaWrapper")
-  protected mediaWrapper: ElementRef<HTMLVideoElement> | undefined = undefined;
+  protected mediaWrapper: ElementRef<HTMLVideoElement | HTMLCanvasElement> | undefined = undefined;
 
   protected localUser: LocalUser = LocalUserState.defaults;
   protected privateTalk: PrivateTalk = PrivateTalkState.defaults;

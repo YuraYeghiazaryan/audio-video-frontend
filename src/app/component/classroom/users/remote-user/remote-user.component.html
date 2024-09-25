@@ -2,7 +2,8 @@
 <div [style]="{'border-style': 'solid', 'border-color': team?.color, 'width': 'fit-content', 'margin-bottom': '10px'}">
   <ng-container *ngIf="remoteUser">
     <br>
-    <canvas #mediaWrapper width="200" height="122"></canvas>
+    <canvas *ngIf="isCanvas" #mediaWrapper width="200" height="122"></canvas>
+    <video *ngIf="!isCanvas" #mediaWrapper width="200" height="122"></video>
     <br>
     {{ remoteUser.role }} {{ remoteUser.username }} {{ remoteUser.id }}
     <br>
