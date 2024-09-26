@@ -17,9 +17,12 @@ export class IsLocalUserTeamPipe implements PipeTransform {
   }
 
   public transform(teams: Teams, userId: number): boolean {
-    return Object.values(teams).find((team: Team): boolean => {
-      return team.userIds.has(userId);
-    }).id === this.localUser.id;
+    return !!Object.values(teams)
+      .filter((team: Team): boolean => {
+        return team.userIds.has(userId);
+      }).find((team: Team): boolean => {
+        return team.userIds.has(this.localUser.id)
+      })
   }
 
   private listenStoreChanges(): void {
