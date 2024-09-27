@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {AudioVideoService} from "../../audio-video.service";
 import {Groups, TeamGroup} from "../../../grouping.service";
-import {AudioVideoUserId, UserId} from "../../../../model/types";
+import {AudioVideoUserId, TeamId, UserId} from "../../../../model/types";
 import {
   AudioInputDevice,
   ConsoleLogger,
@@ -43,7 +43,7 @@ interface Meeting {
 
 interface Meetings {
   main?: Meeting,
-  teamTalk?: Meeting,
+  teamTalk?: Meeting[],
   privateTalk?: Meeting,
 }
 
@@ -134,7 +134,9 @@ export class ChimeService extends AudioVideoService {
   public leave(): void {
     this.meetings.main?.session.audioVideo.stop();
     this.meetings.privateTalk?.session.audioVideo.stop();
-    this.meetings.teamTalk?.session.audioVideo.stop();
+    this.meetings.teamTalk?.forEach((meeting: Meeting): void => {
+      meeting.session.audioVideo.stop();
+    });
   }
 
 
@@ -243,25 +245,24 @@ export class ChimeService extends AudioVideoService {
       this.meetings.main?.session.audioVideo.stopAudioInput().then();
     }
 
+    this.meetings.teamTalk?.forEach((meeting: Meeting): void => {
+      meeting.session.audioVideo.stop();
+      meeting.audioElement?.pause();
+      meeting.session.audioVideo.stop();
+    });
+    this.meetings.teamTalk = [];
+
     if (groups.teamTalk) {
-      const localUserTeam: TeamGroup | undefined = groups.teamTalk.find((team: TeamGroup): boolean => {
+      const localUserTeams: TeamGroup[] = groups.teamTalk.filter((team: TeamGroup): boolean => {
         return team.userIds.has(this.localUser.id);
       });
 
-      if (localUserTeam && localUserTeam.isAudioAvailableForLocalUser) {
-
-        const teamRoomName: string = this.audioVideoUtilService.buildTeamTalkRoomName(localUserTeam.id);
-        this.meetings.teamTalk = await this.createMeeting(teamRoomName, true);
-
-      } else {
-        this.meetings.teamTalk?.audioElement?.pause();
-        this.meetings.teamTalk?.session.audioVideo.stop();
-        this.meetings.teamTalk = undefined;
+      for (const localUserTeam of localUserTeams) {
+        if (localUserTeam && localUserTeam.isAudioAvailableForLocalUser) {
+          const teamRoomName: string = this.audioVideoUtilService.buildTeamTalkRoomName(localUserTeam.id);
+          this.meetings.teamTalk.push(await this.createMeeting(teamRoomName, true));
+        }
       }
-    } else {
-      this.meetings.teamTalk?.audioElement?.pause();
-      this.meetings.teamTalk?.session.audioVideo.stop();
-      this.meetings.teamTalk = undefined;
     }
 
     if (groups.privateTalk && groups.privateTalk.userIds.has(this.localUser.id) && groups.privateTalk.isAudioAvailableForLocalUser) {
@@ -409,7 +410,7 @@ export class ChimeService extends AudioVideoService {
   }
 
   private get allMeetings(): Meeting[] {
-    const meetings: Meeting[] = [];
+    let meetings: Meeting[] = [];
 
     if (this.meetings.main) {
       meetings.push(this.meetings.main);
@@ -420,7 +421,7 @@ export class ChimeService extends AudioVideoService {
     }
 
     if (this.meetings.teamTalk) {
-      meetings.push(this.meetings.teamTalk);
+      meetings = meetings.concat(this.meetings.teamTalk);
     }
 
     return meetings;
