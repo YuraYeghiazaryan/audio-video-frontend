@@ -238,16 +238,19 @@ export class ChimeService extends AudioVideoService {
 
   public override async breakRoomIntoGroups(groups: Groups): Promise<void> {
     if (groups.main && groups.main.userIds.has(this.localUser.id) && groups.main.isAudioAvailableForLocalUser) {
-      await this.meetings.main?.session.audioVideo.startAudioInput(this.meetings.main?.audioInputDevice);
-      await this.meetings.main?.audioElement?.play();
+      if (this.meetings.main?.audioElement.paused) {
+        await this.meetings.main?.session.audioVideo.startAudioInput(this.meetings.main?.audioInputDevice);
+        await this.meetings.main?.audioElement?.play();
+      }
     } else {
-      this.meetings.main?.audioElement?.pause();
       this.meetings.main?.session.audioVideo.stopAudioInput().then();
+      this.meetings.main?.audioElement?.pause();
     }
 
     this.meetings.teamTalk?.forEach((meeting: Meeting): void => {
       meeting.session.audioVideo.stop();
       meeting.audioElement?.pause();
+      document.body.removeChild(meeting.audioElement);
     });
     this.meetings.teamTalk = [];
 
