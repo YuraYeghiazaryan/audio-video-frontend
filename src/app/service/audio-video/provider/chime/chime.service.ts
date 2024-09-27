@@ -248,7 +248,6 @@ export class ChimeService extends AudioVideoService {
     this.meetings.teamTalk?.forEach((meeting: Meeting): void => {
       meeting.session.audioVideo.stop();
       meeting.audioElement?.pause();
-      meeting.session.audioVideo.stop();
     });
     this.meetings.teamTalk = [];
 

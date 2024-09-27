@@ -199,7 +199,6 @@ export class ZoomService extends AudioVideoService {
         } else {
           promises.push(this.muteUserAudioLocally(remoteUser));
         }
-
       });
     });
 
